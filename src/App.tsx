@@ -193,11 +193,29 @@ export default function App() {
       </section>
     </main>
     <footer className="site-footer">
-      <b className="footer-brand">VPN Products<br/>and Services</b>
-      <div className="footer-info">
-        <div className="footer-address">2nd Ward, Near Anjeneya Temple, Malakana Maradi Road, Arhal, Gangavathi, Karnataka 583235, India</div>
-        <div className="footer-links"><a href="mailto:vpnproductsandservices@gmail.com">vpnproductsandservices@gmail.com</a><a href="tel:+919916140898">+91 99161 40898</a><a href="https://www.instagram.com/vpnproductsandservices/" target="_blank" rel="noopener noreferrer">Instagram: @vpnproductsandservices</a></div>
-        <div className="footer-copy">© {new Date().getFullYear()} VPN Products and Services <span>·</span> <a href="https://veereshuppar.com">veereshuppar.com</a></div>
+      <div className="footer-main">
+        <div className="footer-brand-block">
+          <h2 className="footer-brand">VPN Products<br/>and Services</h2>
+          <p>Computer and mobile services, website development, and a marketplace for new and second-hand products.</p>
+        </div>
+        <div className="footer-column">
+          <h3>Visit our shop</h3>
+          <p className="footer-address">2nd Ward, Near Anjeneya Temple, Malakana Maradi Road, Arhal, Gangavathi, Karnataka 583235, India</p>
+          <a className="footer-plain-link" href="https://www.google.com/maps/search/?api=1&query=2nd%20Ward%20near%20Anjeneya%20Temple%2C%20Malakana%20Maradi%20Road%2C%20Arhal%2C%20Gangavathi%2C%20Karnataka%2C%20India%20583235" target="_blank" rel="noopener noreferrer">Get directions →</a>
+        </div>
+        <div className="footer-column">
+          <h3>Contact us</h3>
+          <a className="footer-contact-link" href="mailto:vpnproductsandservices@gmail.com"><span aria-hidden="true">✉</span>vpnproductsandservices@gmail.com</a>
+          <a className="footer-contact-link" href="tel:+919916140898"><span aria-hidden="true">☎</span>+91 99161 40898</a>
+          <div className="footer-socials" aria-label="Social media">
+            <a className="footer-social whatsapp" href="https://wa.me/919916140898?text=Hello%20VPN%20Products%20and%20Services%2C%20I%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.52 3.48A11.87 11.87 0 0 0 12.08 0C5.48 0 .11 5.37.11 11.97c0 2.11.55 4.17 1.6 5.98L0 24l6.2-1.63a11.86 11.86 0 0 0 5.87 1.54h.01c6.6 0 11.97-5.37 11.97-11.97a11.9 11.9 0 0 0-3.53-8.46zM12.08 21.9c-1.83 0-3.62-.49-5.18-1.42l-.37-.22-3.68.97.98-3.59-.24-.37a9.88 9.88 0 1 1 8.49 4.63zm5.42-7.4c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.48-1.75-1.65-2.05-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.48.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35z"/></svg></a>
+            <a className="footer-social instagram" href="https://www.instagram.com/vpnproductsandservices/" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="17.5" cy="6.5" r="1.25" fill="currentColor"/></svg></a>
+          </div>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>© {new Date().getFullYear()} VPN Products and Services. All rights reserved.</span>
+        <a href="https://veereshuppar.com">veereshuppar.com</a>
       </div>
     </footer>
     {notice && <button className="notice" onClick={()=>setNotice("")}>{notice}　×</button>}
