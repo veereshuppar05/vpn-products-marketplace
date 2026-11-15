@@ -79,6 +79,7 @@ export default function App() {
   const [photos,setPhotos] = useState<FileList|null>(null);
   const [selectedProductId,setSelectedProductId] = useState<string|null>(() => productIdFromPath());
   const [activeProductImage,setActiveProductImage] = useState(0);
+  const [activeDetailTab,setActiveDetailTab] = useState<"specifications"|"description">("specifications");
 
   const refresh = async (sessionUser: any = user) => {
     if (!db) return;
@@ -151,6 +152,7 @@ export default function App() {
     const handlePopState = () => {
       setSelectedProductId(productIdFromPath());
       setActiveProductImage(0);
+      setActiveDetailTab("specifications");
     };
     window.addEventListener("popstate",handlePopState);
     return () => window.removeEventListener("popstate",handlePopState);
@@ -160,6 +162,7 @@ export default function App() {
     window.history.pushState({fromProductDetail:true},"","/product/" + encodeURIComponent(item.id));
     setSelectedProductId(item.id);
     setActiveProductImage(0);
+    setActiveDetailTab("specifications");
     window.scrollTo({top:0,behavior:"smooth"});
   };
   const backToProducts = () => {
@@ -299,18 +302,43 @@ export default function App() {
                 ? "Used phone. Scratches are visible on the screen and body, with chipped paint and wear on the blue frame. Review all actual product photos and inspect the phone before purchase."
                 : selectedProduct.description}</p>
             </div>
-            <div className="detail-description">
-              <h2>Product description</h2>
-              <p>{selectedProduct.description}</p>
-            </div>
           </div>
         </div>
-        <section className="detail-specifications">
-          <h2>Specifications</h2>
-          <div className="detail-spec-table">
-            {detailSpecifications.map(row=><div className="detail-spec-row" key={row.label}><b>{row.label}</b><span>{row.value}</span></div>)}
-            <div className="detail-spec-row"><b>Listed price</b><span>{money(selectedProduct.price)}</span></div>
-            <div className="detail-spec-row"><b>Availability</b><span>Available for enquiry</span></div>
+        <section className="detail-tabs-card" aria-label="Product information">
+          <div className="detail-tabs" role="tablist" aria-label="Product information tabs">
+            <button
+              type="button"
+              id="product-specifications-tab"
+              role="tab"
+              aria-selected={activeDetailTab==="specifications"}
+              aria-controls="product-information-panel"
+              className={activeDetailTab==="specifications" ? "active" : ""}
+              onClick={()=>setActiveDetailTab("specifications")}
+            >Specifications</button>
+            <button
+              type="button"
+              id="product-description-tab"
+              role="tab"
+              aria-selected={activeDetailTab==="description"}
+              aria-controls="product-information-panel"
+              className={activeDetailTab==="description" ? "active" : ""}
+              onClick={()=>setActiveDetailTab("description")}
+            >Product Description</button>
+          </div>
+          <div
+            id="product-information-panel"
+            className="detail-tab-panel"
+            role="tabpanel"
+            aria-labelledby={activeDetailTab==="specifications" ? "product-specifications-tab" : "product-description-tab"}
+          >
+            {activeDetailTab==="specifications" ? <div className="detail-spec-table">
+              {detailSpecifications.map(row=><div className="detail-spec-row" key={row.label}><b>{row.label}</b><span>{row.value}</span></div>)}
+              <div className="detail-spec-row"><b>Listed price</b><span>{money(selectedProduct.price)}</span></div>
+              <div className="detail-spec-row"><b>Availability</b><span>Available for enquiry</span></div>
+            </div> : <div className="detail-description-panel">
+              <h2>Product Description</h2>
+              <p>{selectedProduct.description}</p>
+            </div>}
           </div>
         </section>
         <button className="detail-back detail-back-bottom" onClick={backToProducts}>← Back to products</button>
