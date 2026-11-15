@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" fill="none">
+<defs>
+ <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#073B91"/><stop offset=".55" stop-color="#0876E8"/><stop offset="1" stop-color="#28B7F5"/></linearGradient>
+ <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F59A23"/><stop offset="1" stop-color="#F45B16"/></linearGradient>
+ <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F9FCFF"/><stop offset="1" stop-color="#AFC3DA"/></linearGradient>
+ <linearGradient id="dark" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#25344F"/><stop offset="1" stop-color="#08162F"/></linearGradient>
+ <linearGradient id="phone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#12C7FA"/><stop offset=".5" stop-color="#2475F2"/><stop offset="1" stop-color="#F47721"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="13"/></filter>
+ <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>
+</defs>
+<ellipse cx="470" cy="500" rx="405" ry="30" fill="#8AB9EB" opacity=".32" filter="url(#shadow)"/>
+<path d="M35 476C180 530 500 535 805 470" stroke="#2D8BF0" stroke-width="8" stroke-linecap="round" opacity=".25"/>
+<!-- desktop monitor -->
+<rect x="375" y="46" width="395" height="270" rx="20" fill="#16243A"/>
+<rect x="386" y="57" width="373" height="247" rx="12" fill="url(#screen)"/>
+<path d="M405 244C500 120 610 100 747 72V304H386V279C392 267 398 255 405 244Z" fill="#0B3C90" opacity=".48"/>
+<path d="M405 252C516 170 605 154 759 102" stroke="#6BD8FF" stroke-width="7" opacity=".8"/>
+<path d="M560 317H590V363H560Z" fill="#6C7C91"/>
+<path d="M500 365H650L674 385H477Z" fill="url(#metal)"/>
+<!-- tower -->
+<rect x="760" y="126" width="120" height="300" rx="20" fill="url(#dark)"/>
+<rect x="771" y="140" width="98" height="274" rx="14" fill="#101D35"/>
+<rect x="780" y="150" width="80" height="254" rx="12" stroke="#41536D" stroke-width="2"/>
+<circle cx="820" cy="215" r="34" fill="#1769E0" opacity=".25" filter="url(#glow)"/>
+<circle cx="820" cy="215" r="25" fill="none" stroke="#4BC8FF" stroke-width="7"/>
+<circle cx="820" cy="215" r="12" fill="#182D5A"/>
+<circle cx="820" cy="291" r="34" fill="#F47721" opacity=".22" filter="url(#glow)"/>
+<circle cx="820" cy="291" r="25" fill="none" stroke="#FF9A43" stroke-width="7"/>
+<circle cx="820" cy="291" r="12" fill="#182D5A"/>
+<circle cx="820" cy="367" r="34" fill="#755CF6" opacity=".2" filter="url(#glow)"/>
+<circle cx="820" cy="367" r="25" fill="none" stroke="#8C7BFF" stroke-width="7"/>
+<circle cx="820" cy="367" r="12" fill="#182D5A"/>
+<!-- laptop screen -->
+<path d="M112 238Q116 222 133 222H444Q461 222 464 240L485 440H90L112 238Z" fill="#16243A"/>
+<path d="M124 240H451L470 422H105L124 240Z" fill="url(#screen)"/>
+<path d="M123 386C184 311 270 294 450 249V422H105L123 386Z" fill="#093A91" opacity=".45"/>
+<path d="M127 372C215 302 312 296 447 257" stroke="#72D8FF" stroke-width="6"/>
+<path d="M85 435H492L466 467H112Q96 462 85 435Z" fill="url(#metal)"/>
+<path d="M226 440H365L350 452H242Z" fill="#829AB6"/>
+<!-- phone -->
+<rect x="490" y="274" width="112" height="218" rx="22" fill="#101B30"/>
+<rect x="498" y="284" width="96" height="197" rx="16" fill="url(#phone)"/>
+<path d="M505 449C529 405 564 376 594 352V481H498V468Z" fill="#0B4AAB" opacity=".36"/>
+<rect x="531" y="289" width="32" height="5" rx="3" fill="#101B30"/>
+<circle cx="546" cy="472" r="3" fill="#D5E7FF"/>
+<!-- camera -->
+<rect x="600" y="395" width="153" height="95" rx="19" fill="#17243A"/>
+<path d="M625 388L645 372H700L719 390" stroke="#273D5B" stroke-width="12" stroke-linecap="round"/>
+<rect x="614" y="409" width="126" height="66" rx="12" fill="#263A56"/>
+<circle cx="675" cy="442" r="31" fill="#0A1428" stroke="#7286A5" stroke-width="6"/>
+<circle cx="675" cy="442" r="19" fill="#1D64A9" stroke="#91C8EE" stroke-width="3"/>
+<circle cx="675" cy="442" r="8" fill="#08182D"/>
+<!-- headphones -->
+<path d="M655 391C653 307 726 285 773 326C797 348 802 374 799 400" stroke="#1C2B43" stroke-width="22" stroke-linecap="round"/>
+<path d="M655 390C653 315 726 293 773 332" stroke="#60738E" stroke-width="5" stroke-linecap="round"/>
+<rect x="637" y="378" width="31" height="68" rx="15" fill="#111D32"/>
+<rect x="787" y="378" width="31" height="68" rx="15" fill="#111D32"/>
+<rect x="643" y="389" width="17" height="45" rx="8" fill="#F47721"/>
+<rect x="795" y="389" width="17" height="45" rx="8" fill="#F47721"/>
+<!-- speaker -->
+<rect x="688" y="475" width="180" height="61" rx="16" fill="#202F48"/>
+<rect x="699" y="485" width="158" height="41" rx="11" fill="#111C31"/>
+<circle cx="720" cy="505" r="13" fill="#334A68"/>
+<circle cx="720" cy="505" r="7" fill="#7F99B7"/>
+<circle cx="842" cy="505" r="4" fill="#F47721"/>
+</svg>
