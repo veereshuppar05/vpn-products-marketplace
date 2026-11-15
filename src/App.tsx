@@ -22,7 +22,7 @@ const categoryTiles = [
 ];
 const categorySlug = (name:string) => name.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const categoryFromPath = () => {
-  const match = window.location.pathname.match(/^\/category\/([^/]+)\/?$/);
+  const match = window.location.pathname.match(/^\/category\/([^/]+)(?:\/[^/]+)?\/?$/);
   if (!match) return null;
   let slug = "";
   try { slug = decodeURIComponent(match[1]); } catch { return null; }
@@ -59,9 +59,11 @@ const featuredListings: Listing[] = [
   }
 ];
 const productIdFromPath = () => {
-  const match = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
-  if (!match) return null;
-  try { return decodeURIComponent(match[1]); } catch { return null; }
+  const categoryProductMatch = window.location.pathname.match(/^\/category\/([^/]+)\/([^/]+)\/?$/);
+  const legacyProductMatch = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
+  const slug = categoryProductMatch?.[2] ?? legacyProductMatch?.[1];
+  if (!slug) return null;
+  try { return decodeURIComponent(slug); } catch { return null; }
 };
 const money = (n:number) => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
 
@@ -196,8 +198,15 @@ export default function App() {
 
 
   const openProduct = (item:Listing) => {
-    window.history.pushState({fromProductDetail:true},"","/product/" + encodeURIComponent(item.id));
+    const categoryPath = categorySlug(item.category);
+    window.history.pushState(
+      {fromProductDetail:true},
+      "",
+      "/category/" + categoryPath + "/" + encodeURIComponent(item.id)
+    );
     setSelectedProductId(item.id);
+    setSelectedCategoryPage(item.category);
+    setCategory(item.category);
     setActiveProductImage(0);
     setActiveDetailTab("specifications");
     window.scrollTo({top:0,behavior:"smooth"});
