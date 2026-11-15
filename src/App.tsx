@@ -249,7 +249,7 @@ export default function App() {
   };
 
   return <div className="site">
-    <header className="header"><a className="logo" href="#top" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button>{user ? <button className="btn light" onClick={signOut}>Sign out</button> : <button className="btn light" onClick={()=>{setMode("login");setAuthOpen(true);}}>Login / Register</button>}<button className="btn primary" onClick={openSell}>＋ Sell item</button></div></header>
+    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button>{user ? <button className="btn light" onClick={signOut}>Sign out</button> : <button className="btn light" onClick={()=>{setMode("login");setAuthOpen(true);}}>Login / Register</button>}<button className="btn primary" onClick={openSell}>＋ Sell item</button></div></header>
     <main id="top">
       {selectedProduct ? <section className="product-detail-page">
         <button className="detail-back" onClick={backToProducts}>← Back to products</button>
