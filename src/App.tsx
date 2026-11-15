@@ -9,6 +9,7 @@ type Listing = {
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
 const db: SupabaseClient | null = url && key ? createClient(url, key) : null;
+const authRedirectUrl = "https://veereshuppar.com/";
 const categories = ["Mobiles & Tablets", "Computers & Laptops", "Computer Accessories", "Electronics & Gadgets", "Vehicle Parts", "Cars & Bikes", "Home & Kitchen", "Furniture", "Cameras", "Fashion", "Books & Education", "Sports & Fitness", "Tools & Hardware", "Toys & Games", "Musical Instruments", "Other Products"];
 const categoryTiles = [
   { name: "Computers & Laptops", icon: "💻" },
@@ -243,6 +244,21 @@ export default function App() {
     };
   }, []);
 
+  // Show a useful message when Supabase returns an expired or invalid email link.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const errorCode = params.get("error_code");
+    const errorDescription = params.get("error_description");
+    if (errorCode || errorDescription) {
+      setMode("login");
+      setAuthOpen(true);
+      setNotice(errorCode === "otp_expired"
+        ? "This email confirmation link has expired. Enter your email below and choose Resend confirmation email."
+        : errorDescription || "Email verification could not be completed. Please request a new confirmation email.");
+      window.history.replaceState({}, "", window.location.pathname + window.location.search);
+    }
+  }, []);
+
   const visible = useMemo(() => items.filter(item => {
     const text = (item.title + " " + item.description + " " + item.category).toLowerCase();
     const location = (item.city + " " + item.state).toLowerCase();
@@ -414,6 +430,22 @@ export default function App() {
     }
   };
 
+  const resendEmailConfirmation = async () => {
+    if (!db) { setNotice("Connect the Supabase project settings to enable accounts."); return; }
+    const identifier = email.trim();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(identifier)) {
+      setNotice("Enter the email address you used when creating your account.");
+      return;
+    }
+    const {error} = await db.auth.resend({
+      type:"signup",
+      email:identifier,
+      options:{emailRedirectTo:authRedirectUrl}
+    });
+    if (error) setNotice(error.message);
+    else setNotice("A new confirmation email has been sent. Open the newest email and confirm your account.");
+  };
+
   const authenticate = async (event:FormEvent) => {
     event.preventDefault();
     if (!db) { setNotice("Connect the Supabase project settings to enable accounts."); return; }
@@ -445,7 +477,7 @@ export default function App() {
       if (!fullName.trim()) { setNotice("Enter your name to create an account."); return; }
       if (password !== confirmPassword) { setNotice("Password and Confirm Password do not match."); return; }
       const result = isEmail
-        ? await db.auth.signUp({email:identifier,password,options:{data:{full_name:fullName.trim()}}})
+        ? await db.auth.signUp({email:identifier,password,options:{data:{full_name:fullName.trim()},emailRedirectTo:authRedirectUrl}})
         : await db.auth.signUp({phone:authPhone,password,options:{data:{full_name:fullName.trim()}}});
       if (result.error) { setNotice(result.error.message); return; }
       if (!isEmail && !result.data.session) {
@@ -464,8 +496,12 @@ export default function App() {
     const result = isEmail
       ? await db.auth.signInWithPassword({email:identifier,password})
       : await db.auth.signInWithPassword({phone:authPhone,password});
-    if (result.error) setNotice(result.error.message);
-    else { setNotice("You are signed in."); setAuthOpen(false); }
+    if (result.error) {
+      setNotice(result.error.message);
+      if (isEmail && /email not confirmed/i.test(result.error.message)) {
+        setNotice("Please confirm your email first. Use Resend confirmation email below to get a fresh link.");
+      }
+    } else { setNotice("You are signed in."); setAuthOpen(false); }
   };
 
   const submitListing = async (event:FormEvent) => {
@@ -825,7 +861,7 @@ export default function App() {
       <span className="photo-lightbox-count">{activeProductImage+1} / {selectedProduct.image_urls?.length || 1}</span>
     </div>}
     {notice && <button className="notice" onClick={()=>setNotice("")}>{notice}　×</button>}
-    {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{otpRequired?"Verify your phone number":mode==="login"?"Welcome back":"Create an account"}</h2>{otpRequired ? <form onSubmit={authenticate}><p className="auth-hint">Enter the SMS verification code sent to {pendingPhone}.</p><label>Verification code<input required type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code"/></label><button className="btn primary full">Verify phone</button></form> : <form onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email or Phone Number<input required type="text" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address or mobile number"/></label><label>Password<input required minLength={6} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={6} autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Use an email address or an Indian 10-digit mobile number. Phone registration requires SMS verification.</p>}</form>}{!otpRequired && <button className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setConfirmPassword("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button>}</div></div>}
+    {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{otpRequired?"Verify your phone number":mode==="login"?"Welcome back":"Create an account"}</h2>{otpRequired ? <form onSubmit={authenticate}><p className="auth-hint">Enter the SMS verification code sent to {pendingPhone}.</p><label>Verification code<input required type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code"/></label><button className="btn primary full">Verify phone</button></form> : <form onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email or Phone Number<input required type="text" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address or mobile number"/></label><label>Password<input required minLength={6} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={6} autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Use an email address or an Indian 10-digit mobile number. Phone registration requires SMS verification.</p>}</form>}{!otpRequired && <>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setConfirmPassword("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></>}</div></div>}
     {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
   </div>;
 }
