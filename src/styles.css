@@ -2075,3 +2075,77 @@ footer a:hover { color: var(--orange-dark); }
 }
 
 
+
+
+/* Slightly tighter sizing for the All Products page */
+.all-products-page.section {
+  padding-top: 12px;
+  padding-bottom: 34px;
+}
+.all-products-page .category-page-back {
+  margin-bottom: 7px;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+.all-products-page .category-page-heading {
+  margin: 6px 0 14px;
+}
+.all-products-page .category-page-heading h1 {
+  font-size: clamp(23px, 2.35vw, 29px);
+}
+.all-products-page .category-page-heading p {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.all-products-page .grid {
+  gap: 11px;
+}
+.all-products-page .product {
+  border-radius: 11px;
+}
+.all-products-page .product-gallery {
+  padding: 6px;
+}
+.all-products-page .product-main-image {
+  height: 132px;
+  border-radius: 7px;
+}
+.all-products-page .product-body {
+  gap: 4px;
+  padding: 9px;
+}
+.all-products-page .product-body small {
+  font-size: 9px;
+}
+.all-products-page .product h3 {
+  font-size: 13px;
+  min-height: 32px;
+}
+.all-products-page .product strong {
+  font-size: 16px;
+}
+.all-products-page .product p {
+  font-size: 10px;
+}
+.all-products-page .product .buy-button {
+  min-height: 32px;
+  padding: 6px 7px;
+  font-size: 10px;
+}
+.all-products-page .demo-tag {
+  padding: 5px 6px;
+  font-size: 9px;
+}
+@media (max-width: 680px) {
+  .all-products-page.section { padding: 12px 12px 28px; }
+  .all-products-page .grid { gap: 8px; }
+  .all-products-page .product-main-image { height: 108px; }
+  .all-products-page .product-body { padding: 7px; }
+  .all-products-page .product h3 { font-size: 11px; min-height: 30px; }
+  .all-products-page .product strong { font-size: 14px; }
+  .all-products-page .product .buy-button {
+    min-height: 29px;
+    font-size: 9px;
+    padding: 5px 4px;
+  }
+}
