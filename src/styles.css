@@ -434,6 +434,10 @@ footer a:hover { color: var(--orange-dark); }
   border-radius: 13px; background: var(--blue-pale); color: var(--blue);
   font-size: 24px; font-weight: 800;
 }
+.contact-icon.brand-icon { background: #f4f7fb; }
+.contact-icon.brand-icon svg { width: 27px; height: 27px; display: block; }
+.contact-icon.whatsapp-icon { color: #25a85a; background: #e8f8ee; }
+.contact-icon.instagram-icon { color: #d94683; background: #fff0f5; }
 .contact-card span:last-child { min-width: 0; display: grid; gap: 5px; }
 .contact-card b { font-size: 16px; }
 .contact-card small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
