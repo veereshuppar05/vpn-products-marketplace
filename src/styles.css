@@ -2262,5 +2262,5 @@ footer a:hover { color: var(--orange-dark); }
 
 /* Slight desktop nudge for the centered header search */
 @media (min-width: 1101px) {
-  .header .header-search { transform: translateX(-30px); }
+  .header .header-search { transform: translateX(-42px); }
 }
