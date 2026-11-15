@@ -460,6 +460,7 @@ footer a:hover { color: var(--orange-dark); }
 
 /* Clean, structured business footer */
 .site-footer {
+  display: block;
   width: 100%;
   padding: 0 clamp(20px, 5vw, 76px);
   background: #0b1d38;
