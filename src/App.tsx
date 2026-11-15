@@ -80,6 +80,7 @@ export default function App() {
   const [selectedProductId,setSelectedProductId] = useState<string|null>(() => productIdFromPath());
   const [activeProductImage,setActiveProductImage] = useState(0);
   const [photoViewerOpen,setPhotoViewerOpen] = useState(false);
+  const [photoZoomed,setPhotoZoomed] = useState(false);
   const [activeDetailTab,setActiveDetailTab] = useState<"specifications"|"description">("specifications");
 
   const refresh = async (sessionUser: any = user) => {
@@ -165,10 +166,13 @@ export default function App() {
     const handleViewerKeys = (event:KeyboardEvent) => {
       if (event.key === "Escape") {
         setPhotoViewerOpen(false);
+        setPhotoZoomed(false);
       } else if (event.key === "ArrowRight" && selectedProduct?.image_urls?.length) {
         setActiveProductImage(current => (current + 1) % selectedProduct.image_urls.length);
+        setPhotoZoomed(false);
       } else if (event.key === "ArrowLeft" && selectedProduct?.image_urls?.length) {
         setActiveProductImage(current => (current - 1 + selectedProduct.image_urls.length) % selectedProduct.image_urls.length);
+        setPhotoZoomed(false);
       }
     };
     window.addEventListener("keydown",handleViewerKeys);
@@ -434,29 +438,35 @@ export default function App() {
       role="dialog"
       aria-modal="true"
       aria-label="Full-size product photo viewer"
-      onClick={()=>setPhotoViewerOpen(false)}
+      onClick={()=>{setPhotoViewerOpen(false);setPhotoZoomed(false);}}
     >
       <button
         type="button"
         className="photo-lightbox-close"
         aria-label="Close full-size photo"
-        onClick={event=>{event.stopPropagation();setPhotoViewerOpen(false);}}
+        onClick={event=>{event.stopPropagation();setPhotoViewerOpen(false);setPhotoZoomed(false);}}
       >×</button>
       <div className="photo-lightbox-media" onClick={event=>event.stopPropagation()}>
-        <img className="photo-lightbox-image" src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " full-size photo " + (activeProductImage+1)}/>
+        <img
+          className={"photo-lightbox-image" + (photoZoomed ? " zoomed" : "")}
+          src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]}
+          alt={selectedProduct.title + " full-size photo " + (activeProductImage+1)}
+          title={photoZoomed ? "Double-click to fit image" : "Double-click to zoom"}
+          onDoubleClick={event=>{event.stopPropagation();setPhotoZoomed(value=>!value);}}
+        />
       </div>
       {(selectedProduct.image_urls?.length ?? 0)>1 && <>
         <button
           type="button"
           className="photo-lightbox-nav previous"
           aria-label="Previous photo"
-          onClick={event=>{event.stopPropagation();setActiveProductImage(current=>(current-1+selectedProduct.image_urls.length)%selectedProduct.image_urls.length);}}
+          onClick={event=>{event.stopPropagation();setActiveProductImage(current=>(current-1+selectedProduct.image_urls.length)%selectedProduct.image_urls.length);setPhotoZoomed(false);}}
         >‹</button>
         <button
           type="button"
           className="photo-lightbox-nav next"
           aria-label="Next photo"
-          onClick={event=>{event.stopPropagation();setActiveProductImage(current=>(current+1)%selectedProduct.image_urls.length);}}
+          onClick={event=>{event.stopPropagation();setActiveProductImage(current=>(current+1)%selectedProduct.image_urls.length);setPhotoZoomed(false);}}
         >›</button>
         <div className="photo-lightbox-dots" onClick={event=>event.stopPropagation()} aria-label="Choose product photo">
           {selectedProduct.image_urls.map((image,index)=><button
@@ -465,7 +475,7 @@ export default function App() {
             className={activeProductImage===index?"active":""}
             aria-label={"Show photo "+(index+1)}
             aria-current={activeProductImage===index?"true":undefined}
-            onClick={()=>setActiveProductImage(index)}
+            onClick={()=>{setActiveProductImage(index);setPhotoZoomed(false);}}
           />)}
         </div>
       </>}

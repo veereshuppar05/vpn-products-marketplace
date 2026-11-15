@@ -1106,3 +1106,17 @@ footer a:hover { color: var(--orange-dark); }
     max-height: calc(100dvh - 152px) !important;
   }
 }
+
+
+/* Double-click to toggle a subtle full-screen photo zoom */
+.photo-lightbox-media > img.photo-lightbox-image {
+  transform: scale(1);
+  transform-origin: center center;
+  transition: transform .2s ease;
+  cursor: zoom-in;
+  will-change: transform;
+}
+.photo-lightbox-media > img.photo-lightbox-image.zoomed {
+  transform: scale(1.38);
+  cursor: zoom-out;
+}
