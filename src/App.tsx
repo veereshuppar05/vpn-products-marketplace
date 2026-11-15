@@ -187,6 +187,7 @@ export default function App() {
           <a className="contact-card" href="mailto:vpnproductsandservices@gmail.com"><span className="contact-icon">✉</span><span><b>Email us</b><small>vpnproductsandservices@gmail.com</small></span></a>
           <a className="contact-card" href="tel:+919916140898"><span className="contact-icon">☎</span><span><b>Call us</b><small>+91 99161 40898</small></span></a>
           <a className="contact-card" href="https://wa.me/919916140898?text=Hello%20VPN%20Products%20and%20Services%2C%20I%20have%20an%20enquiry." target="_blank" rel="noopener noreferrer"><span className="contact-icon">◉</span><span><b>WhatsApp us</b><small>+91 99161 40898</small></span></a>
+          <a className="contact-card instagram-card" href="https://www.instagram.com/vpnproductsandservices/" target="_blank" rel="noopener noreferrer"><span className="contact-icon">◎</span><span><b>Follow us on Instagram</b><small>@vpnproductsandservices</small></span></a>
           <a className="contact-card address-card" href="https://www.google.com/maps/search/?api=1&query=2nd%20Ward%20near%20Anjeneya%20Temple%2C%20Malakana%20Maradi%20Road%2C%20Arhal%2C%20Gangavathi%2C%20Karnataka%2C%20India%20583235" target="_blank" rel="noopener noreferrer"><span className="contact-icon">⌖</span><span><b>Visit our location</b><small>2nd Ward, Near Anjeneya Temple, Malakana Maradi Road, Arhal, Gangavathi, Karnataka, India – 583235</small><small className="map-link-label">View on Google Maps →</small></span></a>
         </div>
       </section>
@@ -195,7 +196,7 @@ export default function App() {
       <b className="footer-brand">VPN Products<br/>and Services</b>
       <div className="footer-info">
         <div className="footer-address">2nd Ward, Near Anjeneya Temple, Malakana Maradi Road, Arhal, Gangavathi, Karnataka 583235, India</div>
-        <div className="footer-links"><a href="mailto:vpnproductsandservices@gmail.com">vpnproductsandservices@gmail.com</a><a href="tel:+919916140898">+91 99161 40898</a></div>
+        <div className="footer-links"><a href="mailto:vpnproductsandservices@gmail.com">vpnproductsandservices@gmail.com</a><a href="tel:+919916140898">+91 99161 40898</a><a href="https://www.instagram.com/vpnproductsandservices/" target="_blank" rel="noopener noreferrer">Instagram: @vpnproductsandservices</a></div>
         <div className="footer-copy">© {new Date().getFullYear()} VPN Products and Services <span>·</span> <a href="https://veereshuppar.com">veereshuppar.com</a></div>
       </div>
     </footer>
