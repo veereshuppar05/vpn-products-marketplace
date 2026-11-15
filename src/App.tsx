@@ -48,18 +48,33 @@ export default function App() {
   const [phone,setPhone] = useState("");
   const [photos,setPhotos] = useState<FileList|null>(null);
 
-  const refresh = async () => {
+  const refresh = async (sessionUser: any = user) => {
     if (!db) return;
-    const {data,error} = await db.from("listings").select("*").eq("status","active").order("created_at",{ascending:false});
+    // Guests can browse public listing details, but never receive seller phone numbers.
+    const source = sessionUser ? db.from("listings") : db.from("listings_public");
+    const {data,error} = await source.select("*").eq("status","active").order("created_at",{ascending:false});
     if (!error && data) setItems(data as Listing[]);
     if (error) setNotice("Could not load live listings: " + error.message);
   };
   useEffect(() => {
     if (!db) return;
-    db.auth.getSession().then(({data}) => setUser(data.session?.user ?? null));
-    const {data:{subscription}} = db.auth.onAuthStateChange((_event,session) => setUser(session?.user ?? null));
-    void refresh();
-    return () => subscription.unsubscribe();
+    let mounted = true;
+    db.auth.getSession().then(({data}) => {
+      const sessionUser = data.session?.user ?? null;
+      if (mounted) {
+        setUser(sessionUser);
+        void refresh(sessionUser);
+      }
+    });
+    const {data:{subscription}} = db.auth.onAuthStateChange((_event,session) => {
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+      void Promise.resolve().then(() => refresh(sessionUser));
+    });
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const visible = useMemo(() => items.filter(item => {
@@ -112,6 +127,15 @@ export default function App() {
 
   const [formCategory,setFormCategory] = useState("Mobiles & Tablets");
   const signOut = async () => { await db?.auth.signOut(); setUser(null); setNotice("Signed out."); };
+  const openBuy = () => {
+    if (!user) {
+      setMode("login");
+      setNotice("Please login or register before buying and contacting sellers.");
+      setAuthOpen(true);
+      return;
+    }
+    document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});
+  };
   const openSell = () => {
     if (!user) {
       setMode("login");
@@ -137,7 +161,7 @@ export default function App() {
   };
 
   return <div className="site">
-    <header className="header"><a className="logo" href="#top" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions">{user ? <button className="btn light" onClick={signOut}>Sign out</button> : <button className="btn light" onClick={()=>setAuthOpen(true)}>Login / Register</button>}<button className="btn primary" onClick={openSell}>＋ Sell item</button></div></header>
+    <header className="header"><a className="logo" href="#top" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button>{user ? <button className="btn light" onClick={signOut}>Sign out</button> : <button className="btn light" onClick={()=>{setMode("login");setAuthOpen(true);}}>Login / Register</button>}<button className="btn primary" onClick={openSell}>＋ Sell item</button></div></header>
     <main id="top">
       <section className="hero"><div className="hero-copy"><span className="eyebrow">COMPUTER SHOP & MULTI-SERVICE CENTER</span><h1>Buy, Sell, Repair &<br/><em>Get IT Services</em></h1><p>Computer and laptop services, mobile services, website development, and a wide range of new and second-hand products — all in one place.</p><div className="hero-actions"><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>🛒 Browse Products</button><button className="btn light" onClick={()=>document.getElementById("services")?.scrollIntoView({behavior:"smooth"})}>⚒ Our Services</button></div></div><div className="hero-art"><img src="/hero-devices.svg" alt="Computer, laptop, mobile phone, camera, headphones and electronics"/></div></section>
       <section className="feature-strip" aria-label="Our business areas">
