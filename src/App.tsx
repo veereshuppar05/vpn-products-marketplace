@@ -25,10 +25,35 @@ const demo: Listing[] = [
   {id:"demo-2",title:"Honda Activa 6G",description:"Single-owner scooter. Sample listing for preview.",price:62000,category:"Cars & Bikes",condition:"Good",city:"Mysuru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()},
   {id:"demo-3",title:"Dell Inspiron Laptop",description:"Laptop for study and office use. Sample listing for preview.",price:22000,category:"Computers & Laptops",condition:"Fair",city:"Chennai",state:"Tamil Nadu",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()}
 ];
+const featuredListings: Listing[] = [
+  {
+    id:"samsung-galaxy-a12-6gb-128gb",
+    title:"Samsung Galaxy A12 (6GB RAM, 128GB Storage)",
+    description:"Samsung Galaxy A12 in blue with 6GB RAM and 128GB internal storage. Used phone with visible scratches on the display and wear/chipped paint on the body and frame. Please inspect all photos carefully before purchase. Specifications: 6.5-inch HD+ Infinity-V display (720 × 1600); octa-core processor; 48MP main + 5MP ultra-wide + 2MP macro + 2MP depth rear cameras; 8MP front camera; 5,000mAh battery with 15W charging; side-mounted fingerprint sensor; USB Type-C port; 3.5mm headphone jack; microSD expansion support. Battery health, operating condition and included accessories have not been independently verified; buyers are welcome to inspect the phone before purchase.",
+    price:3000,
+    category:"Mobiles & Tablets",
+    condition:"Used - Scratches",
+    city:"Gangavathi",
+    state:"Karnataka",
+    contact_phone:"9916140898",
+    seller_name:"VPN Products and Services",
+    image_urls:[
+      "/products/samsung-galaxy-a12/01-galaxy-a12-front-home.webp",
+      "/products/samsung-galaxy-a12/02-galaxy-a12-back.webp",
+      "/products/samsung-galaxy-a12/03-galaxy-a12-screen-off.webp",
+      "/products/samsung-galaxy-a12/04-galaxy-a12-side-buttons.webp",
+      "/products/samsung-galaxy-a12/05-galaxy-a12-side-tray.webp",
+      "/products/samsung-galaxy-a12/06-galaxy-a12-bottom.webp",
+      "/products/samsung-galaxy-a12/07-galaxy-a12-side-profile.webp"
+    ],
+    status:"active",
+    created_at:new Date().toISOString()
+  }
+];
 const money = (n:number) => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
 
 export default function App() {
-  const [items,setItems] = useState<Listing[]>(demo);
+  const [items,setItems] = useState<Listing[]>([...demo,...featuredListings]);
   const [user,setUser] = useState<any>(null);
   const [query,setQuery] = useState("");
   const [place,setPlace] = useState("");
@@ -53,7 +78,7 @@ export default function App() {
     // Guests can browse public listing details, but never receive seller phone numbers.
     const source = sessionUser ? db.from("listings") : db.from("listings_public");
     const {data,error} = await source.select("*").eq("status","active").order("created_at",{ascending:false});
-    if (!error && data) setItems(data as Listing[]);
+    if (!error && data) setItems([...(data as Listing[]), ...featuredListings]);
     if (error) setNotice("Could not load live listings: " + error.message);
   };
   useEffect(() => {
