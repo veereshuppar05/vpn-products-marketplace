@@ -2258,3 +2258,9 @@ footer a:hover { color: var(--orange-dark); }
   }
   .header-search-icon { left: 13px; width: 16px; height: 16px; }
 }
+
+
+/* Slight desktop nudge for the centered header search */
+@media (min-width: 1101px) {
+  .header .header-search { transform: translateX(-18px); }
+}
