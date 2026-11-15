@@ -20,6 +20,14 @@ const categoryTiles = [
   { name: "Other Products", icon: "📦" },
   { name: "Furniture", icon: "🪑" }
 ];
+const categorySlug = (name:string) => name.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const categoryFromPath = () => {
+  const match = window.location.pathname.match(/^\/category\/([^/]+)\/?$/);
+  if (!match) return null;
+  let slug = "";
+  try { slug = decodeURIComponent(match[1]); } catch { return null; }
+  return [...new Set([...categories,...categoryTiles.map(tile=>tile.name)])].find(name=>categorySlug(name)===slug) ?? null;
+};
 const demo: Listing[] = [
   {id:"demo-1",title:"iPhone 13 · 128GB",description:"Good condition, fully working. Sample listing for preview.",price:28500,category:"Mobiles & Tablets",condition:"Good",city:"Bengaluru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1632633173522-3cbf9e4a3b9b?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()},
   {id:"demo-2",title:"Honda Activa 6G",description:"Single-owner scooter. Sample listing for preview.",price:62000,category:"Cars & Bikes",condition:"Good",city:"Mysuru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()},
@@ -62,7 +70,7 @@ export default function App() {
   const [user,setUser] = useState<any>(null);
   const [query,setQuery] = useState("");
   const [place,setPlace] = useState("");
-  const [category,setCategory] = useState("All");
+  const [category,setCategory] = useState(() => categoryFromPath() ?? "All");
   const [notice,setNotice] = useState("");
   const [authOpen,setAuthOpen] = useState(false);
   const [sellOpen,setSellOpen] = useState(false);
@@ -78,6 +86,7 @@ export default function App() {
   const [phone,setPhone] = useState("");
   const [photos,setPhotos] = useState<FileList|null>(null);
   const [selectedProductId,setSelectedProductId] = useState<string|null>(() => productIdFromPath());
+  const [selectedCategoryPage,setSelectedCategoryPage] = useState<string|null>(() => categoryFromPath());
   const [activeProductImage,setActiveProductImage] = useState(0);
   const [photoViewerOpen,setPhotoViewerOpen] = useState(false);
   const [photoZoomed,setPhotoZoomed] = useState(false);
@@ -152,7 +161,10 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      const categoryPage = categoryFromPath();
       setSelectedProductId(productIdFromPath());
+      setSelectedCategoryPage(categoryPage);
+      setCategory(categoryPage ?? "All");
       setActiveProductImage(0);
       setActiveDetailTab("specifications");
     };
@@ -189,6 +201,28 @@ export default function App() {
     setActiveProductImage(0);
     setActiveDetailTab("specifications");
     window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const openCategory = (categoryName:string) => {
+    window.history.pushState(
+      {fromCategoryPage:true},
+      "",
+      "/category/" + categorySlug(categoryName)
+    );
+    setSelectedProductId(null);
+    setSelectedCategoryPage(categoryName);
+    setCategory(categoryName);
+    setActiveProductImage(0);
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const backToCategories = () => {
+    if (window.history.state?.fromCategoryPage) {
+      window.history.back();
+    } else {
+      window.history.replaceState({},"","/#top");
+      setSelectedCategoryPage(null);
+      setCategory("All");
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
   };
   const backToProducts = () => {
     if (window.history.state?.fromProductDetail) {
@@ -271,7 +305,9 @@ export default function App() {
     }
     const link = "https://wa.me/91" + item.contact_phone.replace(/\D/g,"").replace(/^91/,"") + "?text=" + encodeURIComponent("Hi, I am interested in buying " + item.title + " listed on VPN Products and Services.");
     window.open(link, "_blank", "noopener,noreferrer");
-  };
+  };  
+  const productCards = visible.length ? <div className="grid">{visible.map(item=><article className="product product-clickable" key={item.id} role="link" tabIndex={0} aria-label={"View details for "+item.title} onClick={()=>openProduct(item)} onKeyDown={event=>{if(event.target===event.currentTarget && (event.key==="Enter" || event.key===" ")){event.preventDefault();openProduct(item);}}}><div className="product-gallery"><img className="product-main-image" src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80"} alt={item.title}/><div className="product-thumbnails">{item.image_urls?.slice(1).map((image,index)=><img key={image} src={image} alt={item.title+" photo "+(index+2)}/>)}</div></div><div className="product-body"><small>{item.category} · {item.condition}</small><h3>{item.title}</h3><strong>{money(item.price)}</strong><p>⌖ {item.city}, {item.state}</p><button className="btn primary contact buy-button" onClick={event=>{event.stopPropagation();buyItem(item);}}>{user ? "Buy / Contact Seller" : "Login to Buy"}</button>{!item.contact_phone && <span className="demo-tag">Sample preview listing · seller contact unavailable</span>}</div></article>)}</div> : <div className="empty"><h3>{selectedCategoryPage ? "No products in this category yet" : "No listings found"}</h3><p>{selectedCategoryPage ? "Check back soon for new listings in "+selectedCategoryPage+"." : "Try a different search or category."}</p></div>;
+
 
   return <div className="site">
     <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button>{user ? <button className="btn light" onClick={signOut}>Sign out</button> : <button className="btn light" onClick={()=>{setMode("login");setAuthOpen(true);}}>Login / Register</button>}<button className="btn primary" onClick={openSell}>＋ Sell item</button></div></header>
@@ -375,6 +411,15 @@ export default function App() {
           </div>
         </section>
         <button className="detail-back detail-back-bottom" onClick={backToProducts}>← Back to products</button>
+      </section> : selectedCategoryPage ? <section className="category-page section">
+        <button className="category-page-back" onClick={backToCategories}>← Back to all categories</button>
+        <div className="category-page-heading">
+          <span className="eyebrow">EXPLORE OUR MARKETPLACE</span>
+          <h1>{selectedCategoryPage}</h1>
+          <p>Browse products listed under {selectedCategoryPage}.</p>
+          <span className="category-page-count">{visible.length} {visible.length===1?"product":"products"} available</span>
+        </div>
+        {productCards}
       </section> : <>
 
       <section className="hero"><div className="hero-copy"><span className="eyebrow">COMPUTER SHOP & MULTI-SERVICE CENTER</span><h1>Buy, Sell, Repair &<br/><em>Get IT Services</em></h1><p>Computer and laptop services, mobile services, website development, and a wide range of new and second-hand products — all in one place.</p><div className="hero-actions"><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>🛒 Browse Products</button><button className="btn light" onClick={()=>document.getElementById("services")?.scrollIntoView({behavior:"smooth"})}>⚒ Our Services</button></div></div><div className="hero-art"><img src="/hero-devices.svg" alt="Computer, laptop, mobile phone, camera, headphones and electronics"/></div></section>
@@ -387,12 +432,12 @@ export default function App() {
       </section>
       <section className="category-section section">
         <div className="section-title"><div><span className="eyebrow">EXPLORE OUR MARKETPLACE</span><h2>Shop by Category</h2></div><button className="text-link" onClick={()=>{setCategory("All");document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});}}>View all categories →</button></div>
-        <div className="category-grid">{categoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>{setCategory(tile.name);document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});}}><span className="tile-icon">{tile.icon}</span><b>{tile.name}</b></button>)}</div>
+        <div className="category-grid">{categoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>openCategory(tile.name)}><span className="tile-icon">{tile.icon}</span><b>{tile.name}</b></button>)}</div>
       </section>
       <section className="services section" id="services"><div className="section-title"><div><span className="eyebrow">MORE THAN A MARKETPLACE</span><h2>Products, Services & Digital Solutions</h2><p>Visit our computer shop, get device support or build your business online.</p></div></div><div className="service-grid"><article className="service-card"><span className="service-icon">▣</span><h3>Computer Shop & Services</h3><p>Computers, laptops and accessories, plus setup, troubleshooting, upgrades and service support.</p><button className="service-link" onClick={()=>setNotice("Contact us for computer and laptop availability or service enquiries.")}>Enquire about computer services →</button></article><article className="service-card"><span className="service-icon">▯</span><h3>Mobile Services</h3><p>Mobile device services, setup and support for everyday phone and tablet needs.</p><button className="service-link" onClick={()=>setNotice("Contact us for mobile service enquiries.")}>Enquire about mobile services →</button></article><article className="service-card"><span className="service-icon">⌘</span><h3>Website Development</h3><p>Websites for businesses, shops, professionals and service providers — from business pages to online stores.</p><button className="service-link" onClick={()=>setNotice("Contact us to discuss your website project.")}>Discuss a website project →</button></article><article className="service-card"><span className="service-icon">⇄</span><h3>Buy & Sell Products</h3><p>Discover or list new and second-hand phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and much more.</p><button className="service-link" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Explore marketplace →</button></article></div></section>
       <section className="searchbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="What are you looking for?"/><input value={place} onChange={e=>setPlace(e.target.value)} placeholder="City or state"/><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Search</button></section>
       <section className="section category-filters"><div className="section-title"><div><span className="eyebrow">FILTER THE LISTINGS</span><h2>Browse all product types</h2></div></div><div className="categories"><button className={category==="All"?"active":""} onClick={()=>setCategory("All")}>All items</button>{categories.map(c=><button key={c} className={category===c?"active":""} onClick={()=>setCategory(c)}>{c}</button>)}</div></section>
-      <section className="section" id="listings"><div className="section-title"><div><span className="eyebrow">LISTINGS FROM ACROSS INDIA</span><h2>New & second-hand products</h2><p>{visible.length} listings {place ? "near "+place : "across India"}</p></div></div>{visible.length ? <div className="grid">{visible.map(item=><article className="product product-clickable" key={item.id} role="link" tabIndex={0} aria-label={"View details for "+item.title} onClick={()=>openProduct(item)} onKeyDown={event=>{if(event.target===event.currentTarget && (event.key==="Enter" || event.key===" ")){event.preventDefault();openProduct(item);}}}><div className="product-gallery"><img className="product-main-image" src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80"} alt={item.title}/><div className="product-thumbnails">{item.image_urls?.slice(1).map((image,index)=><img key={image} src={image} alt={item.title+" photo "+(index+2)}/>)}</div></div><div className="product-body"><small>{item.category} · {item.condition}</small><h3>{item.title}</h3><strong>{money(item.price)}</strong><p>⌖ {item.city}, {item.state}</p><button className="btn primary contact buy-button" onClick={event=>{event.stopPropagation();buyItem(item);}}>{user ? "Buy / Contact Seller" : "Login to Buy"}</button>{!item.contact_phone && <span className="demo-tag">Sample preview listing · seller contact unavailable</span>}</div></article>)}</div> : <div className="empty"><h3>No listings found</h3><p>Try a different search or category.</p></div>}</section>
+      <section className="section" id="listings"><div className="section-title"><div><span className="eyebrow">LISTINGS FROM ACROSS INDIA</span><h2>New & second-hand products</h2><p>{visible.length} listings {place ? "near "+place : "across India"}</p></div></div>{productCards}</section>
       <section className="sell-cta"><div><span className="eyebrow">SELL ALMOST ANYTHING</span><h2>Have something useful to sell?</h2><p>List phones, computers, parts, electronics, furniture, appliances, vehicles and many other items.</p></div><button className="btn primary" onClick={openSell}>Start selling</button></section>
       <section className="safety"><b>Buy and sell safely</b><p>Inspect items before paying, meet in a public place, and never share OTPs, UPI PINs or banking passwords.</p></section>
       <section className="contact-section section" id="contact">
