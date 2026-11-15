@@ -58,6 +58,99 @@ const featuredListings: Listing[] = [
     created_at:new Date().toISOString()
   }
 ];
+const isAllProductsPath = () => /^\/products\/?$/.test(window.location.pathname);
+const sampleListings: Listing[] = [
+  {
+    id:"sample-google-pixel-7a",
+    title:"Google Pixel 7a · 128GB",
+    description:"Sample demonstration listing for a Google Pixel 7a with 128GB storage. This is a dummy product shown to demonstrate the marketplace layout; it is not a confirmed item for sale.",
+    price:18999,category:"Mobiles & Tablets",condition:"Good",city:"Bengaluru",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-1000).toISOString()
+  },
+  {
+    id:"sample-lenovo-ideapad-3",
+    title:"Lenovo IdeaPad 3 Laptop",
+    description:"Sample demonstration listing for a Lenovo IdeaPad laptop suitable for study and office use. This dummy item is for website preview only.",
+    price:28999,category:"Computers & Laptops",condition:"Good",city:"Bengaluru",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-2000).toISOString()
+  },
+  {
+    id:"sample-logitech-keyboard-mouse",
+    title:"Wireless Keyboard & Mouse Combo",
+    description:"Sample demonstration listing for a wireless keyboard and mouse combo. This dummy item is included to preview the Computer Accessories category.",
+    price:1299,category:"Computer Accessories",condition:"Like New",city:"Mysuru",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-3000).toISOString()
+  },
+  {
+    id:"sample-jbl-bluetooth-speaker",
+    title:"Portable Bluetooth Speaker",
+    description:"Sample demonstration listing for a portable Bluetooth speaker. Dummy product for marketplace preview only; seller contact is not available.",
+    price:1799,category:"Electronics & Gadgets",condition:"Good",city:"Hubballi",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-4000).toISOString()
+  },
+  {
+    id:"sample-car-led-headlight",
+    title:"Car LED Headlight Bulb Pair",
+    description:"Sample demonstration listing for a pair of car LED headlight bulbs. This dummy item demonstrates the Vehicle Parts category.",
+    price:999,category:"Vehicle Parts",condition:"New",city:"Bengaluru",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-5000).toISOString()
+  },
+  {
+    id:"sample-kitchen-mixer-grinder",
+    title:"Mixer Grinder · 3 Jars",
+    description:"Sample demonstration listing for a three-jar mixer grinder. This is a dummy listing to show the Home & Kitchen category.",
+    price:2499,category:"Home & Kitchen",condition:"Good",city:"Mandya",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-6000).toISOString()
+  },
+  {
+    id:"sample-study-desk",
+    title:"Compact Wooden Study Desk",
+    description:"Sample demonstration listing for a compact wooden study desk. Dummy listing for the Furniture category, added for website preview.",
+    price:3499,category:"Furniture",condition:"Good",city:"Dharwad",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-7000).toISOString()
+  },
+  {
+    id:"sample-canon-eos-camera",
+    title:"Canon EOS DSLR Camera",
+    description:"Sample demonstration listing for a Canon EOS DSLR camera body. This dummy product is for layout preview only and is not a verified sale offer.",
+    price:21999,category:"Cameras",condition:"Good",city:"Mangaluru",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-8000).toISOString()
+  },
+  {
+    id:"sample-travel-backpack",
+    title:"Everyday Travel Backpack",
+    description:"Sample demonstration listing for a daily-use travel backpack. This is a dummy Fashion category product for marketplace preview.",
+    price:899,category:"Fashion",condition:"Like New",city:"Shivamogga",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-9000).toISOString()
+  },
+  {
+    id:"sample-cricket-kit",
+    title:"Cricket Bat & Practice Kit",
+    description:"Sample demonstration listing for a cricket bat and practice kit. This dummy item demonstrates the Sports & Fitness category.",
+    price:1599,category:"Sports & Fitness",condition:"Good",city:"Tumakuru",state:"Karnataka",
+    contact_phone:"",seller_name:"Demo seller",
+    image_urls:["https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=900&q=85"],
+    status:"active",created_at:new Date(Date.now()-10000).toISOString()
+  }
+];
 const productIdFromPath = () => {
   const categoryProductMatch = window.location.pathname.match(/^\/category\/([^/]+)\/([^/]+)\/?$/);
   const legacyProductMatch = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
@@ -68,7 +161,7 @@ const productIdFromPath = () => {
 const money = (n:number) => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
 
 export default function App() {
-  const [items,setItems] = useState<Listing[]>([...demo,...featuredListings]);
+  const [items,setItems] = useState<Listing[]>([...demo,...featuredListings,...sampleListings]);
   const [user,setUser] = useState<any>(null);
   const [query,setQuery] = useState("");
   const [place,setPlace] = useState("");
@@ -89,6 +182,7 @@ export default function App() {
   const [photos,setPhotos] = useState<FileList|null>(null);
   const [selectedProductId,setSelectedProductId] = useState<string|null>(() => productIdFromPath());
   const [selectedCategoryPage,setSelectedCategoryPage] = useState<string|null>(() => categoryFromPath());
+  const [showAllProductsPage,setShowAllProductsPage] = useState(() => isAllProductsPath());
   const [activeProductImage,setActiveProductImage] = useState(0);
   const [photoViewerOpen,setPhotoViewerOpen] = useState(false);
   const [photoZoomed,setPhotoZoomed] = useState(false);
@@ -99,7 +193,7 @@ export default function App() {
     // Guests can browse public listing details, but never receive seller phone numbers.
     const source = sessionUser ? db.from("listings") : db.from("listings_public");
     const {data,error} = await source.select("*").eq("status","active").order("created_at",{ascending:false});
-    if (!error && data) setItems([...(data as Listing[]), ...featuredListings]);
+    if (!error && data) setItems([...(data as Listing[]), ...featuredListings, ...sampleListings]);
     if (error) setNotice("Could not load live listings: " + error.message);
   };
   useEffect(() => {
@@ -170,6 +264,7 @@ export default function App() {
       const categoryPage = categoryFromPath();
       setSelectedProductId(productIdFromPath());
       setSelectedCategoryPage(categoryPage);
+      setShowAllProductsPage(isAllProductsPath());
       setCategory(categoryPage ?? "All");
       setActiveProductImage(0);
       setActiveDetailTab("specifications");
@@ -226,6 +321,24 @@ export default function App() {
     setCategory(categoryName);
     setActiveProductImage(0);
     window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const openAllProducts = () => {
+    window.history.pushState({fromAllProducts:true},"","/products");
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllProductsPage(true);
+    setCategory("All");
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const backFromAllProducts = () => {
+    if (window.history.state?.fromAllProducts) {
+      window.history.back();
+    } else {
+      window.history.replaceState({},"","/");
+      setShowAllProductsPage(false);
+      setCategory("All");
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
   };
   const backToCategories = () => {
     if (window.history.state?.fromCategoryPage) {
@@ -319,7 +432,9 @@ export default function App() {
     const link = "https://wa.me/91" + item.contact_phone.replace(/\D/g,"").replace(/^91/,"") + "?text=" + encodeURIComponent("Hi, I am interested in buying " + item.title + " listed on VPN Products and Services.");
     window.open(link, "_blank", "noopener,noreferrer");
   };  
-  const productCards = visible.length ? <div className="grid">{visible.map(item=><article className="product product-clickable" key={item.id} role="link" tabIndex={0} aria-label={"View details for "+item.title} onClick={()=>openProduct(item)} onKeyDown={event=>{if(event.target===event.currentTarget && (event.key==="Enter" || event.key===" ")){event.preventDefault();openProduct(item);}}}><div className="product-gallery"><img className="product-main-image" src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80"} alt={item.title}/><div className="product-thumbnails">{item.image_urls?.slice(1).map((image,index)=><img key={image} src={image} alt={item.title+" photo "+(index+2)}/>)}</div></div><div className="product-body"><small>{item.category} · {item.condition}</small><h3>{item.title}</h3><strong>{money(item.price)}</strong><p>⌖ {item.city}, {item.state}</p><button className="btn primary contact buy-button" onClick={event=>{event.stopPropagation();buyItem(item);}}>{user ? "Buy / Contact Seller" : "Login to Buy"}</button>{!item.contact_phone && <span className="demo-tag">Sample preview listing · seller contact unavailable</span>}</div></article>)}</div> : <div className="empty"><h3>{selectedCategoryPage ? "No products in this category yet" : "No listings found"}</h3><p>{selectedCategoryPage ? "Check back soon for new listings in "+selectedCategoryPage+"." : "Try a different search or category."}</p></div>;
+  const renderProductCards = (listings:Listing[],compact=false) => listings.length ? <div className={compact ? "grid recent-products-grid" : "grid"}>{listings.map(item=><article className="product product-clickable" key={item.id} role="link" tabIndex={0} aria-label={"View details for "+item.title} onClick={()=>openProduct(item)} onKeyDown={event=>{if(event.target===event.currentTarget && (event.key==="Enter" || event.key===" ")){event.preventDefault();openProduct(item);}}}><div className="product-gallery"><img className="product-main-image" src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80"} alt={item.title}/><div className="product-thumbnails">{item.image_urls?.slice(1).map((image,index)=><img key={image} src={image} alt={item.title+" photo "+(index+2)}/>)}</div></div><div className="product-body"><small>{item.category} · {item.condition}</small><h3>{item.title}</h3><strong>{money(item.price)}</strong><p>⌖ {item.city}, {item.state}</p><button className="btn primary contact buy-button" onClick={event=>{event.stopPropagation();buyItem(item);}}>{user ? "Buy / Contact Seller" : "Login to Buy"}</button>{!item.contact_phone && <span className="demo-tag">Sample preview  : <div className="empty"><h3>{selectedCategoryPage ? "No products in this category yet" : "No listings found"}</h3><p>{selectedCategoryPage ? "Check back soon for new listings in "+selectedCategoryPage+"." : "Try a different search or category."}</p></div>;
+  const productCards = renderProductCards(visible);
+  const recentProductCards = renderProductCards(visible.slice(0,5),true);
 
 
   return <div className="site">
@@ -433,6 +548,15 @@ export default function App() {
           <span className="category-page-count">{visible.length} {visible.length===1?"product":"products"} available</span>
         </div>
         {productCards}
+      </section> : showAllProductsPage ? <section className="all-products-page section">
+        <button className="category-page-back" onClick={backFromAllProducts}>← Back to homepage</button>
+        <div className="category-page-heading">
+          <span className="eyebrow">VPN PRODUCTS AND SERVICES MARKETPLACE</span>
+          <h1>All Products</h1>
+          <p>Browse all available products across categories, newest first.</p>
+          <span className="category-page-count">{visible.length} products available</span>
+        </div>
+        {productCards}
       </section> : <>
 
       <section className="hero"><div className="hero-copy"><span className="eyebrow">COMPUTER SHOP & MULTI-SERVICE CENTER</span><h1>Buy, Sell, Repair &<br/><em>Get IT Services</em></h1><p>Computer and laptop services, mobile services, website development, and a wide range of new and second-hand products — all in one place.</p><div className="hero-actions"><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>🛒 Browse Products</button><button className="btn light" onClick={()=>document.getElementById("services")?.scrollIntoView({behavior:"smooth"})}>⚒ Our Services</button></div></div><div className="hero-art"><img src="/hero-devices.svg" alt="Computer, laptop, mobile phone, camera, headphones and electronics"/></div></section>
@@ -449,7 +573,7 @@ export default function App() {
       </section>
       <section className="services section" id="services"><div className="section-title"><div><span className="eyebrow">MORE THAN A MARKETPLACE</span><h2>Products, Services & Digital Solutions</h2><p>Visit our computer shop, get device support or build your business online.</p></div></div><div className="service-grid"><article className="service-card"><span className="service-icon">▣</span><h3>Computer Shop & Services</h3><p>Computers, laptops and accessories, plus setup, troubleshooting, upgrades and service support.</p><button className="service-link" onClick={()=>setNotice("Contact us for computer and laptop availability or service enquiries.")}>Enquire about computer services →</button></article><article className="service-card"><span className="service-icon">▯</span><h3>Mobile Services</h3><p>Mobile device services, setup and support for everyday phone and tablet needs.</p><button className="service-link" onClick={()=>setNotice("Contact us for mobile service enquiries.")}>Enquire about mobile services →</button></article><article className="service-card"><span className="service-icon">⌘</span><h3>Website Development</h3><p>Websites for businesses, shops, professionals and service providers — from business pages to online stores.</p><button className="service-link" onClick={()=>setNotice("Contact us to discuss your website project.")}>Discuss a website project →</button></article><article className="service-card"><span className="service-icon">⇄</span><h3>Buy & Sell Products</h3><p>Discover or list new and second-hand phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and much more.</p><button className="service-link" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Explore marketplace →</button></article></div></section>
       <section className="searchbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="What are you looking for?"/><input value={place} onChange={e=>setPlace(e.target.value)} placeholder="City or state"/><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Search</button></section>
-      <section className="section" id="listings"><div className="section-title"><div><span className="eyebrow">LATEST MARKETPLACE LISTINGS</span><h2>Recently Added Products</h2><p>{visible.length} {visible.length===1?"product":"products"} {place ? "near "+place : "available across India"}, newest first</p></div></div>{productCards}</section>
+      <section className="section recent-products-section" id="listings"><div className="section-title"><div><span className="eyebrow">LATEST MARKETPLACE LISTINGS</span><h2>Recently Added Products</h2><p>Showing {Math.min(visible.length,5)} of {visible.length} products {place ? "near "+place : "across India"}, newest first</p></div></div>{recentProductCards}<div className="recent-view-all-row"><button type="button" className="text-link" onClick={openAllProducts}>View All Products →</button></div></section>
       <section className="sell-cta"><div><span className="eyebrow">SELL ALMOST ANYTHING</span><h2>Have something useful to sell?</h2><p>List phones, computers, parts, electronics, furniture, appliances, vehicles and many other items.</p></div><button className="btn primary" onClick={openSell}>Start selling</button></section>
       <section className="safety"><b>Buy and sell safely</b><p>Inspect items before paying, meet in a public place, and never share OTPs, UPI PINs or banking passwords.</p></section>
       <section className="contact-section section" id="contact">
