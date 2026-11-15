@@ -443,7 +443,7 @@ export default function App() {
         onClick={event=>{event.stopPropagation();setPhotoViewerOpen(false);}}
       >×</button>
       <div className="photo-lightbox-media" onClick={event=>event.stopPropagation()}>
-        <img src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " full-size photo " + (activeProductImage+1)}/>
+        <img className="photo-lightbox-image" src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " full-size photo " + (activeProductImage+1)}/>
       </div>
       {(selectedProduct.image_urls?.length ?? 0)>1 && <>
         <button

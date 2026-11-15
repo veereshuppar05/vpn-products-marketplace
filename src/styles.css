@@ -1078,3 +1078,31 @@ footer a:hover { color: var(--orange-dark); }
   .photo-lightbox-dots button { flex-basis: 8px; width: 8px; height: 8px; }
   .photo-lightbox-count { right: 12px; bottom: 47px; }
 }
+
+
+/* Fit full original photo inside the viewer; never enlarge to fill the viewport */
+.photo-lightbox-media {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 72px 84px 94px;
+  overflow: hidden;
+}
+.photo-lightbox-media > img.photo-lightbox-image {
+  display: block;
+  width: auto !important;
+  height: auto !important;
+  max-width: calc(100vw - 168px) !important;
+  max-height: calc(100dvh - 166px) !important;
+  object-fit: contain !important;
+  object-position: center center;
+  margin: auto;
+}
+@media (max-width: 600px) {
+  .photo-lightbox-media { padding: 64px 44px 88px; }
+  .photo-lightbox-media > img.photo-lightbox-image {
+    max-width: calc(100vw - 88px) !important;
+    max-height: calc(100dvh - 152px) !important;
+  }
+}
