@@ -1714,3 +1714,26 @@ footer a:hover { color: var(--orange-dark); }
   .account-top-copy b { font-size: 10px; }
   .account-top-copy small { font-size: 8px; }
 }
+
+
+/* Strong emerald contrast for Login / Register, distinct from blue Buy */
+.header-actions .account-top {
+  background: linear-gradient(135deg, #10a879 0%, #087c5b 100%);
+  border-color: #087c5b;
+  color: #fff;
+  box-shadow: 0 4px 12px #087c5b35, inset 0 1px 0 #ffffff30;
+}
+.header-actions .account-top:hover {
+  background: linear-gradient(135deg, #0b956b 0%, #066448 100%);
+  border-color: #066448;
+  box-shadow: 0 6px 16px #087c5b44, inset 0 1px 0 #ffffff35;
+}
+.header-actions .account-top:focus-visible {
+  outline-color: #34d399;
+}
+.account-top-icon {
+  background: #ffffff25;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px #ffffff35;
+}
+.account-top-copy small { color: #d1fae5; }
