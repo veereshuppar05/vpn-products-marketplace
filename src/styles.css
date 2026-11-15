@@ -2264,3 +2264,24 @@ footer a:hover { color: var(--orange-dark); }
 @media (min-width: 1101px) {
   .header .header-search { transform: translateX(-42px); }
 }
+
+
+/* Align search field beside the logo, at the position marked in the reference */
+@media (min-width: 1500px) {
+  .header {
+    grid-template-columns: 260px minmax(0, 690px) minmax(0, 1fr);
+    column-gap: 24px;
+  }
+  .header .header-search {
+    justify-self: start;
+    width: 100%;
+    max-width: 690px;
+    margin: 0;
+    transform: none;
+  }
+}
+@media (min-width: 1101px) and (max-width: 1499px) {
+  .header .header-search {
+    transform: translateX(-42px);
+  }
+}
