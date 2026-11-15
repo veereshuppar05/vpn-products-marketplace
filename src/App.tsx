@@ -571,6 +571,11 @@ export default function App() {
           </div>
         </article>
       ))}
+      {compact && <button type="button" className="recent-view-all-tile" onClick={openAllProducts} aria-label="View all products">
+        <span className="recent-view-all-arrow" aria-hidden="true">→</span>
+        <b>View All Products</b>
+        <small>Explore the marketplace</small>
+      </button>}
     </div>
   ) : (
     <div className="empty">
@@ -731,7 +736,7 @@ export default function App() {
       </section>
       <section className="services section" id="services"><div className="section-title"><div><span className="eyebrow">MORE THAN A MARKETPLACE</span><h2>Products, Services & Digital Solutions</h2><p>Visit our computer shop, get device support or build your business online.</p></div></div><div className="service-grid"><article className="service-card"><span className="service-icon">▣</span><h3>Computer Shop & Services</h3><p>Computers, laptops and accessories, plus setup, troubleshooting, upgrades and service support.</p><button className="service-link" onClick={()=>setNotice("Contact us for computer and laptop availability or service enquiries.")}>Enquire about computer services →</button></article><article className="service-card"><span className="service-icon">▯</span><h3>Mobile Services</h3><p>Mobile device services, setup and support for everyday phone and tablet needs.</p><button className="service-link" onClick={()=>setNotice("Contact us for mobile service enquiries.")}>Enquire about mobile services →</button></article><article className="service-card"><span className="service-icon">⌘</span><h3>Website Development</h3><p>Websites for businesses, shops, professionals and service providers — from business pages to online stores.</p><button className="service-link" onClick={()=>setNotice("Contact us to discuss your website project.")}>Discuss a website project →</button></article><article className="service-card"><span className="service-icon">⇄</span><h3>Buy & Sell Products</h3><p>Discover or list new and second-hand phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and much more.</p><button className="service-link" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Explore marketplace →</button></article></div></section>
       <section className="searchbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="What are you looking for?"/><input value={place} onChange={e=>setPlace(e.target.value)} placeholder="City or state"/><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Search</button></section>
-      <section className="section recent-products-section" id="listings"><div className="section-title"><div><span className="eyebrow">LATEST MARKETPLACE LISTINGS</span><h2>Recently Added Products</h2><p>Showing {Math.min(visible.length,5)} of {visible.length} products {place ? "near "+place : "across India"}, newest first</p></div></div>{recentProductCards}<div className="recent-view-all-row"><button type="button" className="text-link" onClick={openAllProducts}>View All Products →</button></div></section>
+      <section className="section recent-products-section" id="listings"><div className="section-title"><div><span className="eyebrow">LATEST MARKETPLACE LISTINGS</span><h2>Recently Added Products</h2><p>Showing {Math.min(visible.length,5)} of {visible.length} products {place ? "near "+place : "across India"}, newest first</p></div></div>{recentProductCards}</section>
       <section className="sell-cta"><div><span className="eyebrow">SELL ALMOST ANYTHING</span><h2>Have something useful to sell?</h2><p>List phones, computers, parts, electronics, furniture, appliances, vehicles and many other items.</p></div><button className="btn primary" onClick={openSell}>Start selling</button></section>
       <section className="safety"><b>Buy and sell safely</b><p>Inspect items before paying, meet in a public place, and never share OTPs, UPI PINs or banking passwords.</p></section>
       <section className="contact-section section" id="contact">
