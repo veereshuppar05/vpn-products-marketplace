@@ -676,3 +676,84 @@ footer a:hover { color: var(--orange-dark); }
   .detail-spec-table { grid-template-columns: 1fr; }
   .detail-spec-row { grid-template-columns: minmax(108px, .8fr) minmax(0, 1.2fr); gap: 10px; }
 }
+
+
+/* Compact marketplace product page sizing */
+.product-detail-page {
+  width: min(100%, 1180px);
+  padding: 22px 24px 48px;
+}
+.detail-breadcrumb { margin: 8px 0 16px; }
+.product-detail-grid {
+  grid-template-columns: minmax(0, 1.02fr) minmax(340px, .98fr);
+  gap: 18px;
+}
+.detail-gallery-card { padding: 12px; border-radius: 14px; }
+.detail-image-stage {
+  min-height: 0;
+  height: 390px;
+  max-height: 390px;
+  border-radius: 9px;
+}
+.detail-thumbnails { gap: 7px; margin-top: 10px; }
+.detail-thumbnails button {
+  flex-basis: 62px;
+  width: 62px;
+  height: 68px;
+  border-radius: 7px;
+}
+.detail-summary-card {
+  padding: 22px;
+  border-radius: 14px;
+}
+.detail-category { font-size: 12px; }
+.detail-summary-card h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(21px, 2.2vw, 27px);
+  letter-spacing: -.35px;
+}
+.detail-price { margin: 10px 0; font-size: 28px; }
+.detail-condition { padding: 6px 10px; }
+.detail-location { margin: 10px 0 14px; font-size: 13px; }
+.detail-buy-button { min-height: 44px; }
+.detail-condition-note {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 10px;
+}
+.detail-condition-note b { font-size: 13px; }
+.detail-condition-note p, .detail-description p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.detail-description { margin-top: 17px; }
+.detail-description h2, .detail-specifications h2 { font-size: 19px; }
+.detail-specifications {
+  margin-top: 18px;
+  padding: 22px;
+  border-radius: 14px;
+}
+.detail-spec-table { column-gap: 24px; }
+.detail-spec-row { padding: 10px 0; gap: 10px; }
+.detail-spec-row b, .detail-spec-row span { font-size: 12px; }
+@media (max-width: 900px) {
+  .product-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .detail-image-stage {
+    height: min(60vw, 420px);
+    max-height: 420px;
+    min-height: 300px;
+  }
+}
+@media (max-width: 600px) {
+  .product-detail-page { padding: 14px 12px 34px; }
+  .detail-image-stage {
+    height: 76vw;
+    min-height: 260px;
+    max-height: 360px;
+  }
+  .detail-thumbnails button { flex-basis: 56px; width: 56px; height: 62px; }
+  .detail-summary-card, .detail-specifications { padding: 16px; }
+  .detail-summary-card h1 { font-size: 22px; }
+  .detail-price { font-size: 26px; }
+  .detail-spec-table { grid-template-columns: 1fr; }
+}
