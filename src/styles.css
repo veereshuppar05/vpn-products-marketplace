@@ -68,6 +68,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .hero h1 em { font-style: normal; color: var(--blue); }
 .hero p { color: var(--muted); line-height: 1.7; max-width: 520px; }
 .hero img { width: 100%; height: 300px; object-fit: cover; border-radius: 22px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.hero-actions .btn { min-width: 160px; }
+.services.section { margin-top: 42px; margin-bottom: 36px; }
+.services .section-title { margin-bottom: 20px; }
+.services .section-title p { color: var(--muted); margin: 0 0 8px; }
+.service-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.service-card {
+  min-height: 220px; padding: 22px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 8px 24px #102b6209;
+}
+.service-card:hover { border-color: #a9c8f5; box-shadow: 0 12px 28px #1769e018; transform: translateY(-2px); }
+.service-icon {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  border-radius: 12px; background: var(--blue-pale); color: var(--blue);
+  font-size: 25px; font-weight: 800;
+}
+.service-card h3 { color: var(--navy); font-size: 18px; line-height: 1.3; margin: 16px 0 9px; }
+.service-card p { color: var(--muted); font-size: 14px; line-height: 1.65; margin: 0; }
 .searchbar {
   max-width: 1180px; margin: 0 auto 52px; background: var(--surface); padding: 16px;
   box-shadow: 0 8px 30px #102b6210; border: 1px solid var(--line);
@@ -144,6 +163,7 @@ footer a:hover { color: var(--orange-dark); }
   .searchbar { margin: 0 16px 34px; grid-template-columns: 1fr; }
   .section { margin: 34px auto; }
   .grid { grid-template-columns: repeat(2, 1fr); }
+  .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sell-cta, .safety { margin-left: 16px; margin-right: 16px; }
   .sell-cta { gap: 20px; }
 }
@@ -153,7 +173,9 @@ footer a:hover { color: var(--orange-dark); }
   .logo b { font-size: 11px; }
   .header-actions .btn { padding: 10px 12px; font-size: 13px; }
   .hero h1 { font-size: 43px; }
-  .grid { grid-template-columns: 1fr; }
+  .grid, .service-grid { grid-template-columns: 1fr; }
+  .service-card { min-height: auto; }
+  .hero-actions .btn { flex: 1 1 100%; }
   .product>img { height: 210px; }
   .sell-cta { display: block; padding: 26px; }
   .sell-cta .btn { margin-top: 12px; }
