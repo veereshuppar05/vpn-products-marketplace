@@ -171,6 +171,7 @@ export default function App() {
         <div className="feature-item"><span>⌘</span><b>Website<br/>Development</b></div>
         <div className="feature-item"><span>▱</span><b>Multi-Brand<br/>Products</b></div>
       </section>
+      {!user ? <section className="member-banner" aria-label="Member access required"><span>🔒 Buying and selling are available only to registered members.</span><button className="btn light" onClick={()=>{setMode("login");setAuthOpen(true);}}>Login</button><button className="btn register-cta" onClick={()=>{setMode("signup");setAuthOpen(true);}}>Register</button></section> : <section className="member-banner" aria-label="Member access enabled"><span>✓ You are signed in. You can now buy and sell on VPN Products and Services.</span></section>}
       <section className="category-section section">
         <div className="section-title"><div><span className="eyebrow">EXPLORE OUR MARKETPLACE</span><h2>Shop by Category</h2></div><button className="text-link" onClick={()=>{setCategory("All");document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});}}>View all categories →</button></div>
         <div className="category-grid">{categoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>{setCategory(tile.name);document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});}}><span className="tile-icon">{tile.icon}</span><b>{tile.name}</b></button>)}</div>
