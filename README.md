@@ -1,6 +1,6 @@
-# VPN Products Marketplace
+# VPN Products and Services Marketplace
 
-India-wide second-hand marketplace branded **VPN Products**, using https://veereshuppar.com/.
+India-wide second-hand marketplace branded **VPN Products and Services**, using https://veereshuppar.com/.
 
 ## Features
 - Responsive React + Vite website
