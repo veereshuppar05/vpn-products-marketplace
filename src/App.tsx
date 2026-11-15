@@ -255,6 +255,29 @@ export default function App() {
           <div className="detail-gallery-card">
             <div className="detail-image-stage">
               <img src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " photo " + (activeProductImage+1)}/>
+              {(selectedProduct.image_urls?.length ?? 0) > 1 && <>
+                <button
+                  type="button"
+                  className="detail-image-nav prev"
+                  aria-label="Previous product photo"
+                  title="Previous photo"
+                  onClick={()=>setActiveProductImage(current=>{
+                    const total=selectedProduct.image_urls?.length ?? 1;
+                    return (current - 1 + total) % total;
+                  })}
+                >‹</button>
+                <button
+                  type="button"
+                  className="detail-image-nav next"
+                  aria-label="Next product photo"
+                  title="Next photo"
+                  onClick={()=>setActiveProductImage(current=>{
+                    const total=selectedProduct.image_urls?.length ?? 1;
+                    return (current + 1) % total;
+                  })}
+                >›</button>
+                <span className="detail-image-counter">{activeProductImage+1} / {selectedProduct.image_urls.length}</span>
+              </>}
             </div>
             <div className="detail-thumbnails">
               {selectedProduct.image_urls?.map((image,index)=><button key={image} className={activeProductImage===index?"active":""} onClick={()=>setActiveProductImage(index)} aria-label={"Show product photo "+(index+1)}>
