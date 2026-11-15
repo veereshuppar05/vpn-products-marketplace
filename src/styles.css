@@ -1503,3 +1503,63 @@ footer a:hover { color: var(--orange-dark); }
   .tile-icon { height: 34px; font-size: 24px; }
   .category-tile b { font-size: 10.5px; }
 }
+
+
+/* Refined account access button in the top navigation */
+.header-actions .account-top {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 140px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid #cbdcf5;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f6ff 100%);
+  color: #123568;
+  box-shadow: 0 3px 10px #164b8a0d, inset 0 1px 0 #fff;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.header-actions .account-top:hover {
+  background: #eaf2ff;
+  border-color: #8eb5ef;
+  box-shadow: 0 6px 15px #164b8a18;
+  transform: translateY(-1px);
+}
+.account-top-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 9px;
+  background: #e2edff;
+  color: #1769e0;
+}
+.account-top-icon svg { display: block; width: 19px; height: 19px; }
+.account-top-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.15;
+}
+.account-top-copy b { font-size: 13px; font-weight: 800; }
+.account-top-copy small { color: #647796; font-size: 10px; font-weight: 650; }
+.header-actions .account-top.signed-in { min-width: 112px; }
+.header-actions .account-top.signed-in .account-top-copy b { font-size: 12px; }
+@media (max-width: 850px) {
+  .header-actions .account-top { min-width: 112px; min-height: 40px; padding: 5px 9px; gap: 6px; }
+  .account-top-icon { width: 27px; height: 27px; flex-basis: 27px; }
+  .account-top-icon svg { width: 17px; height: 17px; }
+  .account-top-copy b { font-size: 11px; }
+  .account-top-copy small { font-size: 9px; }
+}
+@media (max-width: 560px) {
+  .header-actions .account-top { min-width: 0; padding: 5px 6px; gap: 4px; border-radius: 9px; }
+  .account-top-icon { width: 24px; height: 24px; flex-basis: 24px; border-radius: 7px; }
+  .account-top-icon svg { width: 15px; height: 15px; }
+  .account-top-copy b { font-size: 10px; }
+  .account-top-copy small { font-size: 8px; }
+}
