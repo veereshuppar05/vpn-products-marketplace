@@ -432,7 +432,55 @@ export default function App() {
     const link = "https://wa.me/91" + item.contact_phone.replace(/\D/g,"").replace(/^91/,"") + "?text=" + encodeURIComponent("Hi, I am interested in buying " + item.title + " listed on VPN Products and Services.");
     window.open(link, "_blank", "noopener,noreferrer");
   };  
-  const renderProductCards = (listings:Listing[],compact=false) => listings.length ? <div className={compact ? "grid recent-products-grid" : "grid"}>{listings.map(item=><article className="product product-clickable" key={item.id} role="link" tabIndex={0} aria-label={"View details for "+item.title} onClick={()=>openProduct(item)} onKeyDown={event=>{if(event.target===event.currentTarget && (event.key==="Enter" || event.key===" ")){event.preventDefault();openProduct(item);}}}><div className="product-gallery"><img className="product-main-image" src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80"} alt={item.title}/><div className="product-thumbnails">{item.image_urls?.slice(1).map((image,index)=><img key={image} src={image} alt={item.title+" photo "+(index+2)}/>)}</div></div><div className="product-body"><small>{item.category} · {item.condition}</small><h3>{item.title}</h3><strong>{money(item.price)}</strong><p>⌖ {item.city}, {item.state}</p><button className="btn primary contact buy-button" onClick={event=>{event.stopPropagation();buyItem(item);}}>{user ? "Buy / Contact Seller" : "Login to Buy"}</button>{!item.contact_phone && <span className="demo-tag">Sample preview  : <div className="empty"><h3>{selectedCategoryPage ? "No products in this category yet" : "No listings found"}</h3><p>{selectedCategoryPage ? "Check back soon for new listings in "+selectedCategoryPage+"." : "Try a different search or category."}</p></div>;
+  const renderProductCards = (listings:Listing[],compact=false) => listings.length ? (
+    <div className={compact ? "grid recent-products-grid" : "grid"}>
+      {listings.map(item=>(
+        <article
+          className="product product-clickable"
+          key={item.id}
+          role="link"
+          tabIndex={0}
+          aria-label={"View details for "+item.title}
+          onClick={()=>openProduct(item)}
+          onKeyDown={event=>{
+            if(event.target===event.currentTarget && (event.key==="Enter" || event.key===" ")){
+              event.preventDefault();
+              openProduct(item);
+            }
+          }}
+        >
+          <div className="product-gallery">
+            <img
+              className="product-main-image"
+              src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80"}
+              alt={item.title}
+            />
+            <div className="product-thumbnails">
+              {item.image_urls?.slice(1).map((image,index)=>(
+                <img key={image} src={image} alt={item.title+" photo "+(index+2)}/>
+              ))}
+            </div>
+          </div>
+          <div className="product-body">
+            <small>{item.category} · {item.condition}</small>
+            <h3>{item.title}</h3>
+            <strong>{money(item.price)}</strong>
+            <p>⌖ {item.city}, {item.state}</p>
+            <button
+              className="btn primary contact buy-button"
+              onClick={event=>{event.stopPropagation();buyItem(item);}}
+            >{user ? "Buy / Contact Seller" : "Login to Buy"}</button>
+            {!item.contact_phone && <span className="demo-tag">Demo product · sample listing · seller contact unavailable</span>}
+          </div>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <div className="empty">
+      <h3>{selectedCategoryPage ? "No products in this category yet" : "No listings found"}</h3>
+      <p>{selectedCategoryPage ? "Check back soon for new listings in "+selectedCategoryPage+"." : "Try a different search or category."}</p>
+    </div>
+  );
   const productCards = renderProductCards(visible);
   const recentProductCards = renderProductCards(visible.slice(0,5),true);
 
