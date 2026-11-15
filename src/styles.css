@@ -380,3 +380,40 @@ footer a:hover { color: var(--orange-dark); }
   .category-section .section-title { gap: 10px; }
   .text-link { font-size: 12px; white-space: nowrap; }
 }
+
+.buy-top {
+  background: var(--blue);
+  color: #fff;
+  border: 1px solid var(--blue);
+  box-shadow: 0 5px 14px #1769e026;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.buy-top:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+.member-banner {
+  max-width: 1380px;
+  margin: 18px auto 0;
+  padding: 14px 20px;
+  border: 1px solid #c9defd;
+  border-radius: 14px;
+  background: linear-gradient(100deg, #eaf3ff, #f7faff);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 650;
+}
+.member-banner .btn { padding: 8px 14px; font-size: 13px; }
+.member-banner .register-cta { background: var(--blue); color: white; border: 1px solid var(--blue); }
+@media (max-width: 850px) {
+  .header-actions { flex-wrap: wrap; gap: 7px; }
+}
+@media (max-width: 560px) {
+  .header-actions { width: 100%; margin-left: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .header-actions .btn { white-space: nowrap; }
+  .member-banner { margin: 12px 12px 0; padding: 12px; }
+}
