@@ -433,7 +433,7 @@ export default function App() {
   const resendEmailConfirmation = async () => {
     if (!db) { setNotice("Connect the Supabase project settings to enable accounts."); return; }
     const identifier = email.trim();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(identifier)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
       setNotice("Enter the email address you used when creating your account.");
       return;
     }
