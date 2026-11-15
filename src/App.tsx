@@ -328,6 +328,8 @@ export default function App() {
     setSelectedCategoryPage(null);
     setShowAllProductsPage(true);
     setCategory("All");
+    setQuery("");
+    setPlace("");
     window.scrollTo({top:0,behavior:"smooth"});
   };
   const backFromAllProducts = () => {
