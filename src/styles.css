@@ -27,13 +27,17 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .site { min-height: 100vh; }
 .header {
-  height: 76px; background: var(--surface); border-bottom: 1px solid var(--line);
-  display: flex; align-items: center; gap: 26px; padding: 0 max(5vw, 20px);
+  height: 112px; background: var(--surface); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 26px; padding: 8px max(5vw, 20px);
   position: sticky; top: 0; z-index: 5; box-shadow: 0 2px 12px #071b4308;
 }
-.logo { display: flex; gap: 10px; align-items: center; color: var(--navy); text-decoration: none; white-space: nowrap; font-size: 20px; }
-.logo img { display: block; width: 82px; height: 50px; object-fit: contain; flex: 0 0 auto; }
-.logo b { font-weight: 750; }
+.logo {
+  display: flex; flex: 0 0 132px; flex-direction: column; gap: 0;
+  align-items: center; justify-content: center; color: var(--navy);
+  text-decoration: none; white-space: nowrap; text-align: center;
+}
+.logo img { display: block; width: 116px; height: 62px; object-fit: contain; flex: 0 0 auto; }
+.logo b { font-size: 12px; line-height: 1.15; letter-spacing: -.1px; font-weight: 800; }
 .header-search { flex: 1; }
 .header-search input, .searchbar input {
   width: 100%; border: 1px solid var(--line); border-radius: 12px;
@@ -144,8 +148,9 @@ footer a:hover { color: var(--orange-dark); }
   .sell-cta { gap: 20px; }
 }
 @media (max-width: 560px) {
-  .logo { font-size: 17px; }
-  .logo img { width: 66px; height: 42px; }
+  .logo { flex-basis: 112px; }
+  .logo img { width: 100px; height: 54px; }
+  .logo b { font-size: 11px; }
   .header-actions .btn { padding: 10px 12px; font-size: 13px; }
   .hero h1 { font-size: 43px; }
   .grid { grid-template-columns: 1fr; }
