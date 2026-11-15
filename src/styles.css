@@ -2285,3 +2285,19 @@ footer a:hover { color: var(--orange-dark); }
     transform: translateX(-42px);
   }
 }
+
+
+/* Precisely position the desktop search at the logo-adjacent marked location */
+@media (min-width: 1101px) {
+  .header .header-search {
+    position: absolute;
+    left: 17.5vw;
+    top: 50%;
+    width: clamp(320px, 36vw, 460px);
+    max-width: 460px;
+    margin: 0;
+    flex: none;
+    transform: translateY(-50%);
+    justify-self: auto;
+  }
+}
