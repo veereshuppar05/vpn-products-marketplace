@@ -1774,3 +1774,70 @@ footer a:hover { color: var(--orange-dark); }
   box-shadow: inset 0 0 0 1px #ffffff35;
 }
 .account-top-copy small { color: #d1fae5; }
+
+
+/* Compact services section cards and heading */
+.services.section {
+  max-width: 1380px;
+  padding: 14px clamp(18px, 3vw, 42px) 20px;
+  margin: 0 auto;
+}
+.services .section-title { margin-bottom: 14px; }
+.services .section-title .eyebrow {
+  font-size: 12px;
+  letter-spacing: 1.8px;
+}
+.services .section-title h2 {
+  font-size: clamp(27px, 2.4vw, 34px);
+  line-height: 1.18;
+  margin: 6px 0 8px;
+}
+.services .section-title p {
+  max-width: 650px;
+  font-size: 16px;
+  line-height: 1.45;
+  margin: 0;
+}
+.services .service-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.services .service-card {
+  min-height: 0;
+  padding: 18px;
+  border-radius: 15px;
+  box-shadow: 0 5px 18px #102b6208;
+}
+.services .service-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 21px;
+}
+.services .service-card h3 {
+  font-size: 16px;
+  line-height: 1.28;
+  margin: 12px 0 7px;
+}
+.services .service-card p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.services .service-link {
+  font-size: 12px;
+  padding: 8px 0 0;
+}
+@media (max-width: 1100px) {
+  .services .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .services.section { padding: 8px 14px 18px; }
+  .services .section-title { margin-bottom: 12px; }
+  .services .section-title h2 { font-size: 25px; }
+  .services .section-title p { font-size: 14px; }
+  .services .service-grid { grid-template-columns: 1fr; gap: 10px; }
+  .services .service-card { padding: 15px; }
+  .services .service-card h3 { margin-top: 9px; }
+}
+
+
