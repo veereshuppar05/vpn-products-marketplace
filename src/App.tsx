@@ -79,6 +79,7 @@ export default function App() {
   const [photos,setPhotos] = useState<FileList|null>(null);
   const [selectedProductId,setSelectedProductId] = useState<string|null>(() => productIdFromPath());
   const [activeProductImage,setActiveProductImage] = useState(0);
+  const [photoViewerOpen,setPhotoViewerOpen] = useState(false);
   const [activeDetailTab,setActiveDetailTab] = useState<"specifications"|"description">("specifications");
 
   const refresh = async (sessionUser: any = user) => {
@@ -157,6 +158,26 @@ export default function App() {
     window.addEventListener("popstate",handlePopState);
     return () => window.removeEventListener("popstate",handlePopState);
   }, []);
+  useEffect(() => {
+    if (!photoViewerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleViewerKeys = (event:KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPhotoViewerOpen(false);
+      } else if (event.key === "ArrowRight" && selectedProduct?.image_urls?.length) {
+        setActiveProductImage(current => (current + 1) % selectedProduct.image_urls.length);
+      } else if (event.key === "ArrowLeft" && selectedProduct?.image_urls?.length) {
+        setActiveProductImage(current => (current - 1 + selectedProduct.image_urls.length) % selectedProduct.image_urls.length);
+      }
+    };
+    window.addEventListener("keydown",handleViewerKeys);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown",handleViewerKeys);
+    };
+  }, [photoViewerOpen,selectedProduct]);
+
 
   const openProduct = (item:Listing) => {
     window.history.pushState({fromProductDetail:true},"","/product/" + encodeURIComponent(item.id));
@@ -257,7 +278,15 @@ export default function App() {
         <div className="product-detail-grid">
           <div className="detail-gallery-card">
             <div className="detail-image-stage">
-              <img src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " photo " + (activeProductImage+1)}/>
+              <button
+                type="button"
+                className="detail-image-open"
+                onClick={()=>setPhotoViewerOpen(true)}
+                aria-label="Open product photo in full screen"
+                title="View full-size photo"
+              >
+                <img src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " photo " + (activeProductImage+1)}/>
+              </button>
               {(selectedProduct.image_urls?.length ?? 0) > 1 && <>
                 <button
                   type="button"
@@ -400,6 +429,48 @@ export default function App() {
         <a href="https://veereshuppar.com">veereshuppar.com</a>
       </div>
     </footer>
+    {photoViewerOpen && selectedProduct && <div
+      className="photo-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Full-size product photo viewer"
+      onClick={()=>setPhotoViewerOpen(false)}
+    >
+      <button
+        type="button"
+        className="photo-lightbox-close"
+        aria-label="Close full-size photo"
+        onClick={event=>{event.stopPropagation();setPhotoViewerOpen(false);}}
+      >×</button>
+      <div className="photo-lightbox-media" onClick={event=>event.stopPropagation()}>
+        <img src={selectedProduct.image_urls?.[activeProductImage] || selectedProduct.image_urls?.[0]} alt={selectedProduct.title + " full-size photo " + (activeProductImage+1)}/>
+      </div>
+      {(selectedProduct.image_urls?.length ?? 0)>1 && <>
+        <button
+          type="button"
+          className="photo-lightbox-nav previous"
+          aria-label="Previous photo"
+          onClick={event=>{event.stopPropagation();setActiveProductImage(current=>(current-1+selectedProduct.image_urls.length)%selectedProduct.image_urls.length);}}
+        >‹</button>
+        <button
+          type="button"
+          className="photo-lightbox-nav next"
+          aria-label="Next photo"
+          onClick={event=>{event.stopPropagation();setActiveProductImage(current=>(current+1)%selectedProduct.image_urls.length);}}
+        >›</button>
+        <div className="photo-lightbox-dots" onClick={event=>event.stopPropagation()} aria-label="Choose product photo">
+          {selectedProduct.image_urls.map((image,index)=><button
+            type="button"
+            key={image}
+            className={activeProductImage===index?"active":""}
+            aria-label={"Show photo "+(index+1)}
+            aria-current={activeProductImage===index?"true":undefined}
+            onClick={()=>setActiveProductImage(index)}
+          />)}
+        </div>
+      </>}
+      <span className="photo-lightbox-count">{activeProductImage+1} / {selectedProduct.image_urls?.length || 1}</span>
+    </div>}
     {notice && <button className="notice" onClick={()=>setNotice("")}>{notice}　×</button>}
     {authOpen && <div className="overlay" onClick={()=>setAuthOpen(false)}><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{mode==="login"?"Welcome back":"Create an account"}</h2><form onSubmit={authenticate}><label>Email<input required type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input required minLength={6} type="password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="btn primary full">{mode==="login"?"Sign in":"Sign up"}</button></form><button className="switch" onClick={()=>setMode(mode==="login"?"signup":"login")}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></div></div>}
     {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
