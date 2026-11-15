@@ -422,9 +422,11 @@ export default function App() {
     const identifier = email.trim();
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
     const digits = identifier.replace(/\D/g,"");
-    const authPhone = identifier.startsWith("+") ? "+" + digits
+    const authPhoneCandidate = identifier.startsWith("+") ? "+" + digits
       : digits.length === 10 ? "+91" + digits
+      : digits.length === 11 && digits.startsWith("0") ? "+91" + digits.slice(1)
       : digits.length === 12 && digits.startsWith("91") ? "+" + digits : "";
+    const authPhone = digits.length >= 8 && digits.length <= 15 ? authPhoneCandidate : "";
 
     if (otpRequired) {
       if (!otpCode.trim()) { setNotice("Enter the verification code sent to your phone."); return; }
