@@ -20,6 +20,26 @@ const categoryTiles = [
   { name: "Other Products", icon: "📦" },
   { name: "Furniture", icon: "🪑" }
 ];
+const categoryIconByName:Record<string,string> = {
+  "Mobiles & Tablets":"📱",
+  "Computers & Laptops":"💻",
+  "Computer Accessories":"⌨️",
+  "Electronics & Gadgets":"🎧",
+  "Vehicle Parts":"⚙️",
+  "Cars & Bikes":"🏍️",
+  "Home & Kitchen":"🏠",
+  "Furniture":"🪑",
+  "Cameras":"📷",
+  "Fashion":"👕",
+  "Books & Education":"📚",
+  "Sports & Fitness":"🏏",
+  "Tools & Hardware":"🛠️",
+  "Toys & Games":"🧸",
+  "Musical Instruments":"🎸",
+  "Other Products":"📦"
+};
+const allCategoryTiles = categories.map(name=>({name,icon:categoryIconByName[name] ?? "📦"}));
+const isAllCategoriesPath = () => /^\/categories\/?$/.test(window.location.pathname);
 const categorySlug = (name:string) => name.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const categoryFromPath = () => {
   const match = window.location.pathname.match(/^\/category\/([^/]+)(?:\/[^/]+)?\/?$/);
@@ -183,6 +203,7 @@ export default function App() {
   const [selectedProductId,setSelectedProductId] = useState<string|null>(() => productIdFromPath());
   const [selectedCategoryPage,setSelectedCategoryPage] = useState<string|null>(() => categoryFromPath());
   const [showAllProductsPage,setShowAllProductsPage] = useState(() => isAllProductsPath());
+  const [showAllCategoriesPage,setShowAllCategoriesPage] = useState(() => isAllCategoriesPath());
   const [activeProductImage,setActiveProductImage] = useState(0);
   const [photoViewerOpen,setPhotoViewerOpen] = useState(false);
   const [photoZoomed,setPhotoZoomed] = useState(false);
@@ -265,6 +286,7 @@ export default function App() {
       setSelectedProductId(productIdFromPath());
       setSelectedCategoryPage(categoryPage);
       setShowAllProductsPage(isAllProductsPath());
+      setShowAllCategoriesPage(isAllCategoriesPath());
       setCategory(categoryPage ?? "All");
       setActiveProductImage(0);
       setActiveDetailTab("specifications");
@@ -318,15 +340,39 @@ export default function App() {
     );
     setSelectedProductId(null);
     setSelectedCategoryPage(categoryName);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
     setCategory(categoryName);
     setActiveProductImage(0);
     window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const openAllCategories = () => {
+    window.history.pushState({fromAllCategories:true},"","/categories");
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(true);
+    setShowAllProductsPage(false);
+    setCategory("All");
+    setQuery("");
+    setPlace("");
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const backFromAllCategories = () => {
+    if (window.history.state?.fromAllCategories) {
+      window.history.back();
+    } else {
+      window.history.replaceState({},"","/");
+      setShowAllCategoriesPage(false);
+      setCategory("All");
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
   };
   const openAllProducts = () => {
     window.history.pushState({fromAllProducts:true},"","/products");
     setSelectedProductId(null);
     setSelectedCategoryPage(null);
     setShowAllProductsPage(true);
+    setShowAllCategoriesPage(false);
     setCategory("All");
     setQuery("");
     setPlace("");
@@ -598,6 +644,19 @@ export default function App() {
           <span className="category-page-count">{visible.length} {visible.length===1?"product":"products"} available</span>
         </div>
         {productCards}
+      </section> : showAllCategoriesPage ? <section className="all-categories-page section">
+        <button className="category-page-back" onClick={backFromAllCategories}>← Back to homepage</button>
+        <div className="category-page-heading">
+          <span className="eyebrow">EXPLORE OUR MARKETPLACE</span>
+          <h1>All Categories</h1>
+          <p>Choose a category to browse products and listings.</p>
+          <span className="category-page-count">{allCategoryTiles.length} categories</span>
+        </div>
+        <div className="all-categories-grid category-grid">
+          {allCategoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>openCategory(tile.name)}>
+            <span className="tile-icon">{tile.icon}</span><b>{tile.name}</b>
+          </button>)}
+        </div>
       </section> : showAllProductsPage ? <section className="all-products-page section">
         <button className="category-page-back" onClick={backFromAllProducts}>← Back to homepage</button>
         <div className="category-page-heading">
@@ -618,7 +677,7 @@ export default function App() {
         <div className="feature-item"><span>▱</span><b>Multi-Brand<br/>Products</b></div>
       </section>
       <section className="category-section section">
-        <div className="section-title"><div><span className="eyebrow">EXPLORE OUR MARKETPLACE</span><h2>Shop by Category</h2></div><button className="text-link" onClick={()=>{setCategory("All");document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});}}>View all categories →</button></div>
+        <div className="section-title"><div><span className="eyebrow">EXPLORE OUR MARKETPLACE</span><h2>Shop by Category</h2></div><button className="text-link" onClick={openAllCategories}>View all categories →</button></div>
         <div className="category-grid">{categoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>openCategory(tile.name)}><span className="tile-icon">{tile.icon}</span><b>{tile.name}</b></button>)}</div>
       </section>
       <section className="services section" id="services"><div className="section-title"><div><span className="eyebrow">MORE THAN A MARKETPLACE</span><h2>Products, Services & Digital Solutions</h2><p>Visit our computer shop, get device support or build your business online.</p></div></div><div className="service-grid"><article className="service-card"><span className="service-icon">▣</span><h3>Computer Shop & Services</h3><p>Computers, laptops and accessories, plus setup, troubleshooting, upgrades and service support.</p><button className="service-link" onClick={()=>setNotice("Contact us for computer and laptop availability or service enquiries.")}>Enquire about computer services →</button></article><article className="service-card"><span className="service-icon">▯</span><h3>Mobile Services</h3><p>Mobile device services, setup and support for everyday phone and tablet needs.</p><button className="service-link" onClick={()=>setNotice("Contact us for mobile service enquiries.")}>Enquire about mobile services →</button></article><article className="service-card"><span className="service-icon">⌘</span><h3>Website Development</h3><p>Websites for businesses, shops, professionals and service providers — from business pages to online stores.</p><button className="service-link" onClick={()=>setNotice("Contact us to discuss your website project.")}>Discuss a website project →</button></article><article className="service-card"><span className="service-icon">⇄</span><h3>Buy & Sell Products</h3><p>Discover or list new and second-hand phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and much more.</p><button className="service-link" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Explore marketplace →</button></article></div></section>
