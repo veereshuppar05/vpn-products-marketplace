@@ -1841,3 +1841,115 @@ footer a:hover { color: var(--orange-dark); }
 }
 
 
+
+
+/* Further compact homepage callout, safety note, services and search */
+.sell-cta {
+  max-width: 1140px;
+  margin: 28px auto 20px;
+  padding: 22px 30px;
+  border-radius: 18px;
+  gap: 18px;
+}
+.sell-cta h2 {
+  font-size: 24px;
+  line-height: 1.2;
+  margin: 5px 0 7px;
+}
+.sell-cta p {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0;
+}
+.sell-cta .eyebrow {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+}
+.sell-cta .btn {
+  padding: 10px 16px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+.safety {
+  max-width: 1140px;
+  margin: 18px auto 34px;
+  padding: 12px 17px;
+  border-radius: 12px;
+}
+.safety b { font-size: 14px; }
+.safety p {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 5px 0 0;
+}
+.searchbar {
+  margin: 18px auto 24px;
+  padding: 10px;
+  gap: 9px;
+  border-radius: 14px;
+}
+.searchbar input {
+  padding: 9px 12px;
+  min-height: 42px;
+  font-size: 14px;
+  border-radius: 9px;
+}
+.searchbar .btn {
+  padding: 9px 15px;
+  min-height: 42px;
+  font-size: 14px;
+  border-radius: 9px;
+}
+.services.section {
+  padding-top: 8px;
+  padding-bottom: 12px;
+}
+.services .section-title { margin-bottom: 10px; }
+.services .section-title h2 {
+  font-size: clamp(24px, 2.1vw, 30px);
+}
+.services .section-title p { font-size: 14px; }
+.services .service-grid { gap: 11px; }
+.services .service-card {
+  padding: 14px;
+  border-radius: 13px;
+}
+.services .service-icon {
+  width: 34px;
+  height: 34px;
+  font-size: 19px;
+}
+.services .service-card h3 {
+  font-size: 14px;
+  margin: 9px 0 6px;
+}
+.services .service-card p {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.services .service-link {
+  font-size: 11px;
+  padding-top: 6px;
+}
+@media (max-width: 850px) {
+  .sell-cta { margin: 22px 16px 16px; padding: 18px 22px; }
+  .safety { margin: 14px 16px 26px; }
+}
+@media (max-width: 560px) {
+  .sell-cta { padding: 16px; margin: 18px 14px 14px; }
+  .sell-cta h2 { font-size: 21px; }
+  .sell-cta p { font-size: 13px; }
+  .sell-cta .btn { margin-top: 8px; }
+  .safety { padding: 11px 13px; margin: 12px 14px 22px; }
+  .searchbar { margin: 12px 14px 18px; padding: 9px; gap: 8px; }
+  .searchbar input, .searchbar .btn {
+    min-height: 38px;
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+  .services .section-title h2 { font-size: 23px; }
+  .services .section-title p { font-size: 13px; }
+  .services .service-card { padding: 13px; }
+}
+
+
