@@ -12,6 +12,7 @@ create table if not exists public.customer_addresses (
   landmark text,
   city text not null check (char_length(trim(city)) between 2 and 80),
   state text not null check (char_length(trim(state)) between 2 and 80),
+  district text not null check (char_length(trim(district)) between 2 and 80),
   address_type text not null default 'Home' check (address_type in ('Home','Work','Other')),
   is_default boolean not null default false,
   created_at timestamptz not null default now()
