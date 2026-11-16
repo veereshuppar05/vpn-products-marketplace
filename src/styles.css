@@ -3469,3 +3469,104 @@ footer a:hover { color: var(--orange-dark); }
   .product-buy-actions { grid-template-columns: 1fr 1fr; gap: 5px; }
   .product-buy-actions .btn { font-size: 10px; }
 }
+
+
+/* Keep paired purchase actions exactly the same size. */
+.product-buy-actions,
+.recent-products-grid .product-buy-actions,
+.detail-buy-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.product-buy-actions .btn,
+.recent-products-grid .product-buy-actions .btn,
+.detail-buy-actions .btn {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+.product-buy-actions .product-cart-button,
+.recent-products-grid .product-buy-actions .product-cart-button,
+.detail-buy-actions .detail-cart-button {
+  background: linear-gradient(180deg, #f1f7ff 0%, #e3efff 100%);
+  color: #174b91;
+  border: 1px solid #bcd4f5;
+  box-shadow: 0 2px 6px #1769e012;
+}
+.product-buy-actions .product-cart-button:hover,
+.recent-products-grid .product-buy-actions .product-cart-button:hover,
+.detail-buy-actions .detail-cart-button:hover {
+  background: linear-gradient(180deg, #e6f1ff 0%, #d5e7ff 100%);
+  border-color: #91b8ed;
+  color: #103e7f;
+}
+
+/* Match Buy, Sell and cart control height in the top navigation. */
+.header-actions .buy-top,
+.header-actions > .btn.primary {
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 0 15px;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 11px;
+}
+.header-actions .buy-top {
+  min-width: 0;
+  width: auto;
+}
+.header-actions .cart-icon-button {
+  box-sizing: border-box;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 6px;
+  border-radius: 11px;
+}
+.header-actions .cart-icon-button svg { width: 22px; height: 22px; }
+@media (max-width: 850px) {
+  .header-actions .buy-top,
+  .header-actions > .btn.primary {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+  .header-actions .cart-icon-button {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+  }
+  .header-actions .cart-icon-button svg { width: 21px; height: 21px; }
+}
+@media (max-width: 560px) {
+  .product-buy-actions,
+  .recent-products-grid .product-buy-actions,
+  .detail-buy-actions { gap: 6px; }
+  .product-buy-actions .btn,
+  .recent-products-grid .product-buy-actions .btn,
+  .detail-buy-actions .btn {
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+}
