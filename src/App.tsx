@@ -20,6 +20,23 @@ type AddressDraft = {
   address_line2: string; landmark: string; city: string; state: string; district: string;
   address_type: "Home" | "Work" | "Other"; is_default: boolean;
 };
+type MarketplaceOrderItem = {
+  id: string; order_id: string; product_title: string; quantity: number; unit_price: number;
+  image_url?: string; is_test_product?: boolean;
+};
+type MarketplaceReturnRequest = {
+  id: string; order_id: string; buyer_id: string; reason: string; details: string; status: string;
+  admin_note?: string | null; return_awb?: string | null; return_tracking_url?: string | null;
+  return_shipping_status?: string | null;
+};
+type MarketplaceOrder = {
+  id: string; buyer_id: string; delivery_address: any; subtotal: number; delivery_fee: number;
+  status: string; created_at: string; payment_status: string; payment_method: string;
+  shipping_status: string; shipping_awb?: string | null; shipping_courier_name?: string | null;
+  shipping_eta?: string | null; shipping_tracking_url?: string | null; tracking_payload?: any;
+  tracking_updated_at?: string | null; is_test_order?: boolean; cancellation_reason?: string | null;
+  items: MarketplaceOrderItem[]; returnRequest?: MarketplaceReturnRequest | null;
+};
 const emptyAddressDraft:AddressDraft = {
   full_name:"",phone:"",pincode:"",address_line1:"",address_line2:"",
   landmark:"",city:"",state:"",district:"",address_type:"Home",is_default:false
@@ -256,6 +273,15 @@ export default function App() {
   const [profileSaving,setProfileSaving] = useState(false);
   const [cartItems,setCartItems] = useState<Listing[]>([]);
   const [showCartPage,setShowCartPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/cart");
+  const [showOrdersPage,setShowOrdersPage] = useState(false);
+  const [isAdmin,setIsAdmin] = useState(false);
+  const [orders,setOrders] = useState<MarketplaceOrder[]>([]);
+  const [ordersLoading,setOrdersLoading] = useState(false);
+  const [orderBusyId,setOrderBusyId] = useState("");
+  const [returnOrderId,setReturnOrderId] = useState("");
+  const [returnReason,setReturnReason] = useState("Damaged product");
+  const [returnDetails,setReturnDetails] = useState("");
+  const [returnBusy,setReturnBusy] = useState(false);
   const [checkoutStep,setCheckoutStep] = useState<"cart"|"address"|"review"|"success">("cart");
   const [checkoutItemIds,setCheckoutItemIds] = useState<string[]>([]);
   const [addresses,setAddresses] = useState<CustomerAddress[]>([]);
@@ -321,12 +347,47 @@ export default function App() {
       setCartItems([]);
       setAddresses([]);
       setSelectedAddressId("");
+      setIsAdmin(false);
+      setOrders([]);
+      setOrdersLoading(false);
       return;
     }
-    const [cartResult,addressResult] = await Promise.all([
+    const [cartResult,addressResult,profileResult] = await Promise.all([
       db.from("cart_items").select("item_key,item_snapshot,quantity").eq("user_id",sessionUser.id).order("created_at",{ascending:true}),
-      db.from("customer_addresses").select("*").eq("user_id",sessionUser.id).order("is_default",{ascending:false}).order("created_at",{ascending:false})
+      db.from("customer_addresses").select("*").eq("user_id",sessionUser.id).order("is_default",{ascending:false}).order("created_at",{ascending:false}),
+      db.from("profiles").select("is_admin").eq("id",sessionUser.id).maybeSingle()
     ]);
+    const shopAdmin = profileResult.data?.is_admin === true;
+    setIsAdmin(shopAdmin);
+    setOrdersLoading(true);
+    let orderQuery = db.from("marketplace_orders").select("*").order("created_at",{ascending:false});
+    if (!shopAdmin) orderQuery = orderQuery.eq("buyer_id",sessionUser.id);
+    const {data:orderRows,error:ordersError} = await orderQuery;
+    if (ordersError) {
+      setOrders([]);
+      setNotice("Order history needs supabase/order-lifecycle.sql. " + ordersError.message);
+    } else {
+      const orderIds = (orderRows || []).map((order:any)=>order.id);
+      if (!orderIds.length) {
+        setOrders([]);
+      } else {
+        const [itemRows,returnRows] = await Promise.all([
+          db.from("marketplace_order_items").select("*").in("order_id",orderIds),
+          db.from("marketplace_return_requests").select("*").in("order_id",orderIds)
+        ]);
+        if (itemRows.error || returnRows.error) {
+          setNotice("Order details need supabase/order-lifecycle.sql. " + (itemRows.error?.message || returnRows.error?.message));
+        }
+        const orderItems = itemRows.data || [];
+        const returns = returnRows.data || [];
+        setOrders((orderRows || []).map((order:any)=>({
+          ...order,
+          items:orderItems.filter((item:any)=>item.order_id===order.id),
+          returnRequest:returns.find((request:any)=>request.order_id===order.id) || null
+        })) as MarketplaceOrder[]);
+      }
+    }
+    setOrdersLoading(false);
     if (cartResult.error) {
       setNotice("Cart setup needs the Supabase commerce SQL migration. " + cartResult.error.message);
     } else {
@@ -348,6 +409,9 @@ export default function App() {
       setCartItems([]);
       setAddresses([]);
       setSelectedAddressId("");
+      setIsAdmin(false);
+      setOrders([]);
+      setShowOrdersPage(false);
     }
   }, [user?.id]);
 
@@ -791,6 +855,9 @@ export default function App() {
     setUser(null);
     setCartItems([]);
     setAddresses([]);
+    setOrders([]);
+    setIsAdmin(false);
+    setShowOrdersPage(false);
     setSelectedAddressId("");
     setCheckoutItemIds([]);
     // Clear the locally held auth form values as well as the Supabase session.
@@ -1008,6 +1075,96 @@ export default function App() {
     setProfileMenuOpen(false);
     window.scrollTo({top:0,behavior:"smooth"});
   };
+  const openMyOrders = () => {
+    if (!user) { requireLoginForCommerce(); return; }
+    setProfileMenuOpen(false);
+    setShowOrdersPage(true);
+    setShowCartPage(false);
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
+    setCategory("All");
+    void loadCommerceData(user);
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const cancelCustomerOrder = async (orderId:string) => {
+    if (!db || !user) { requireLoginForCommerce(); return; }
+    if (!window.confirm("Cancel this order request? If a courier shipment has already been booked, cancellation will be sent to Shiprocket and may be refused after dispatch.")) return;
+    setOrderBusyId(orderId);
+    const {data,error} = await db.functions.invoke("shiprocket",{body:{action:"cancel",orderId,reason:"Cancelled by customer"}});
+    setOrderBusyId("");
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Could not cancel this order."); return; }
+    setNotice("Order cancelled successfully.");
+    await loadCommerceData(user);
+  };
+  const refreshOrderTracking = async (orderId:string) => {
+    if (!db || !user) return;
+    setOrderBusyId(orderId);
+    const {data,error} = await db.functions.invoke("shiprocket",{body:{action:"track",orderId}});
+    setOrderBusyId("");
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Could not refresh delivery status."); return; }
+    setNotice("Latest delivery status: "+(data.status || "Updated"));
+    await loadCommerceData(user);
+  };
+  const submitReturnRequest = async (orderId:string) => {
+    if (!db || !user) return;
+    if (!returnReason.trim()) { setNotice("Select a return reason."); return; }
+    setReturnBusy(true);
+    const {data,error} = await db.rpc("create_marketplace_return_request",{
+      p_order_id:orderId,p_reason:returnReason,p_details:returnDetails.trim()
+    });
+    setReturnBusy(false);
+    if (error) { setNotice("Could not submit your return request. "+error.message); return; }
+    setReturnOrderId("");
+    setReturnDetails("");
+    setReturnReason("Damaged product");
+    setNotice("Return request submitted. Our shop will review it.");
+    await loadCommerceData(user);
+  };
+  const adminUpdateOrder = async (orderId:string,status?:string,paymentStatus?:string) => {
+    if (!db || !isAdmin) return;
+    if (paymentStatus==="paid" && !window.confirm("Confirm that you have actually received and verified the customer's advance payment before marking this order as paid.")) return;
+    setOrderBusyId(orderId);
+    const {data,error} = await db.functions.invoke("shiprocket",{body:{action:"admin-update-order",orderId,status,paymentStatus}});
+    setOrderBusyId("");
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Could not update this order."); return; }
+    setNotice("Order updated.");
+    await loadCommerceData(user);
+  };
+  const adminBookShipment = async (orderId:string) => {
+    if (!db || !isAdmin) return;
+    if (!window.confirm("Book this prepaid Shiprocket shipment and request pickup from your shop?")) return;
+    setOrderBusyId(orderId);
+    const {data,error} = await db.functions.invoke("shiprocket",{body:{action:"book",orderId}});
+    setOrderBusyId("");
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Shipment booking failed."); return; }
+    setNotice("Shipment booked. AWB: "+(data.awb || "assigned"));
+    await loadCommerceData(user);
+  };
+  const adminProcessReturn = async (returnRequestId:string,action:"approve-return"|"reject-return") => {
+    if (!db || !isAdmin) return;
+    const warning = action==="approve-return"
+      ? "Approve this return and book a reverse pickup from the customer? Shiprocket reverse-pickup charges may apply."
+      : "Reject this customer's return request?";
+    if (!window.confirm(warning)) return;
+    setOrderBusyId(returnRequestId);
+    const {data,error} = await db.functions.invoke("shiprocket",{body:{action,returnRequestId,note:action==="reject-return"?"Return request reviewed by shop.":""}});
+    setOrderBusyId("");
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Could not process return request."); return; }
+    setNotice(action==="approve-return"?"Return approved and reverse pickup scheduled.":"Return request rejected.");
+    await loadCommerceData(user);
+  };
+  const refreshReturnTracking = async (returnRequestId:string) => {
+    if (!db || !user) return;
+    setOrderBusyId(returnRequestId);
+    const {data,error} = await db.functions.invoke("shiprocket",{body:{action:"track-return",returnRequestId}});
+    setOrderBusyId("");
+    if (error || data?.error) { setNotice(data?.error || error?.message || "Could not refresh return status."); return; }
+    setNotice("Return status: "+(data.status || "Updated"));
+    await loadCommerceData(user);
+  };
+
   const closeCartPanel = () => {
     setCheckoutStep("cart");
     setCheckoutItemIds([]);
@@ -1305,6 +1462,9 @@ export default function App() {
             <span className="profile-dropdown-identity"><b>{displayName}</b><small>{user.email || user.phone || "Signed-in account"}</small></span>
           </div>
           <div className="profile-menu-divider"/>
+          <button type="button" className="profile-menu-item" role="menuitem" onClick={openMyOrders}>
+            <span aria-hidden="true">▣</span> My Orders
+          </button>
           <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("view")}>
             <span aria-hidden="true">♙</span> My Profile
           </button>
@@ -1324,7 +1484,94 @@ export default function App() {
         </div>}
       </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
-      {showCartPage ? <section className="cart-page section">
+      {showOrdersPage ? <section className="my-orders-page section">
+        <button type="button" className="cart-page-back" onClick={()=>setShowOrdersPage(false)}>← Continue shopping</button>
+        <div className="cart-page-heading">
+          <span className="eyebrow">ACCOUNT</span>
+          <h1>My Orders</h1>
+          <p>View order confirmations, cancel eligible orders, request returns and refresh delivery status.</p>
+        </div>
+        {ordersLoading ? <div className="cart-page-empty"><p>Loading your orders…</p></div> : orders.length===0 ? <div className="cart-page-empty">
+          <span className="cart-page-empty-icon" aria-hidden="true">▣</span>
+          <h2>No orders yet</h2>
+          <p>Your order requests will appear here after checkout.</p>
+          <button type="button" className="btn primary" onClick={()=>setShowOrdersPage(false)}>Browse products</button>
+        </div> : <div className="my-orders-list">
+          {orders.map(order=>{
+            const delivered = order.status==="delivered" || /delivered/i.test(String(order.shipping_status||""));
+            const dispatched = /shipped|in transit|out for delivery|picked up|delivered/i.test(String(order.shipping_status||""));
+            const cancellable = order.status!=="cancelled" && !delivered && !dispatched;
+            const returnRequest = order.returnRequest;
+            const busy = orderBusyId===order.id;
+            const statusText = order.status==="cancelled" ? "Cancelled"
+              : delivered ? "Delivered"
+              : dispatched ? order.shipping_status
+              : order.status==="confirmed" ? "Order confirmed"
+              : order.status==="processing" ? "Processing"
+              : order.is_test_order ? "Test order placed"
+              : "Awaiting confirmation";
+            return <article className="my-order-card" key={order.id}>
+              <div className="my-order-card-head">
+                <div><span className="eyebrow">ORDER REQUEST</span><strong>#{order.id.slice(0,8).toUpperCase()}</strong><small>{new Date(order.created_at).toLocaleString("en-IN")}</small></div>
+                <span className={"order-status-pill "+(order.status==="cancelled"?"is-cancelled":delivered?"is-delivered":order.is_test_order?"is-test":"")}>{statusText}</span>
+              </div>
+              {order.is_test_order && <div className="test-order-warning"><b>Test order only</b><span>This ₹1 listing never creates a real courier shipment. Cancel it here after testing checkout.</span></div>}
+              <div className="my-order-items">
+                {order.items.map(item=><div className="my-order-item" key={item.id}>
+                  {item.image_url && <img src={item.image_url} alt="" />}
+                  <span>{item.product_title} × {item.quantity}</span>
+                  <b>{money(Number(item.unit_price)*Number(item.quantity))}</b>
+                </div>)}
+              </div>
+              <div className="my-order-meta">
+                <span>Products: {money(Number(order.subtotal||0))}</span>
+                <span>Delivery: {money(Number(order.delivery_fee||0))}</span>
+                <strong>Total: {money(Number(order.subtotal||0)+Number(order.delivery_fee||0))}</strong>
+              </div>
+              <div className="my-order-address">
+                <b>Delivery address</b>
+                <span>{order.delivery_address?.full_name} · {order.delivery_address?.phone}</span>
+                <span>{order.delivery_address?.address_line1}, {order.delivery_address?.address_line2}, {order.delivery_address?.city}{order.delivery_address?.district?", "+order.delivery_address.district:""}, {order.delivery_address?.state} - {order.delivery_address?.pincode}</span>
+              </div>
+              {order.shipping_courier_name && <div className="my-order-shipping">
+                <b>Courier: {order.shipping_courier_name}</b>
+                {order.shipping_eta && <span>Estimated delivery: {order.shipping_eta}</span>}
+                {order.shipping_awb && <span>AWB: {order.shipping_awb}</span>}
+                {order.shipping_tracking_url && <a href={order.shipping_tracking_url} target="_blank" rel="noopener noreferrer">Open courier tracking ↗</a>}
+                {order.tracking_updated_at && <small>Last updated: {new Date(order.tracking_updated_at).toLocaleString("en-IN")}</small>}
+              </div>}
+              <div className="my-order-actions">
+                {order.shipping_awb && <button className="btn light" type="button" disabled={busy} onClick={()=>void refreshOrderTracking(order.id)}>{busy?"Refreshing…":"Refresh delivery status"}</button>}
+                {cancellable && <button className="btn light danger-outline" type="button" disabled={busy} onClick={()=>void cancelCustomerOrder(order.id)}>{busy?"Cancelling…":"Cancel order"}</button>}
+                {delivered && !order.is_test_order && !returnRequest && <button className="btn light" type="button" onClick={()=>{setReturnOrderId(returnOrderId===order.id?"":order.id);setReturnDetails("");}}>Request return</button>}
+                {isAdmin && order.status==="pending_confirmation" && <button className="btn light" type="button" disabled={busy} onClick={()=>void adminUpdateOrder(order.id,"confirmed")}>Confirm order</button>}
+                {isAdmin && order.status!=="cancelled" && order.payment_status!=="paid" && <button className="btn light" type="button" disabled={busy} onClick={()=>void adminUpdateOrder(order.id,undefined,"paid")}>Mark prepaid received</button>}
+                {isAdmin && order.status==="confirmed" && order.payment_status==="paid" && !order.is_test_order && !order.shiprocket_order_id && <button className="btn primary" type="button" disabled={busy} onClick={()=>void adminBookShipment(order.id)}>Book Shiprocket shipment</button>}
+              </div>
+              {returnOrderId===order.id && <form className="order-return-form" onSubmit={event=>{event.preventDefault();void submitReturnRequest(order.id);}}>
+                <b>Request a return</b>
+                <label>Reason<select value={returnReason} onChange={event=>setReturnReason(event.target.value)}>
+                  <option>Damaged product</option><option>Wrong item received</option><option>Item not as described</option><option>Missing parts or accessories</option><option>Other</option>
+                </select></label>
+                <label>Additional details (optional)<textarea maxLength={1200} value={returnDetails} onChange={event=>setReturnDetails(event.target.value)} placeholder="Describe the issue"/></label>
+                <div className="my-order-actions"><button className="btn primary" type="submit" disabled={returnBusy}>{returnBusy?"Submitting…":"Submit return request"}</button><button className="btn light" type="button" onClick={()=>setReturnOrderId("")}>Close</button></div>
+              </form>}
+              {returnRequest && <div className="my-order-return">
+                <b>Return request: {returnRequest.status.replaceAll("_"," ")}</b>
+                <span>Reason: {returnRequest.reason}</span>
+                {returnRequest.admin_note && <small>{returnRequest.admin_note}</small>}
+                {returnRequest.return_awb && <span>Reverse pickup AWB: {returnRequest.return_awb}</span>}
+                {returnRequest.return_tracking_url && <a href={returnRequest.return_tracking_url} target="_blank" rel="noopener noreferrer">Track return ↗</a>}
+                {returnRequest.return_awb && <button className="btn light" type="button" disabled={busy} onClick={()=>void refreshReturnTracking(returnRequest.id)}>{busy?"Refreshing…":"Refresh return status"}</button>}
+                {isAdmin && returnRequest.status==="requested" && <div className="my-order-actions">
+                  <button className="btn primary" type="button" disabled={orderBusyId===returnRequest.id} onClick={()=>void adminProcessReturn(returnRequest.id,"approve-return")}>Approve & book return pickup</button>
+                  <button className="btn light danger-outline" type="button" disabled={orderBusyId===returnRequest.id} onClick={()=>void adminProcessReturn(returnRequest.id,"reject-return")}>Reject return</button>
+                </div>}
+              </div>}
+            </article>;
+          })}
+        </div>}
+      </section> : showCartPage ? <section className="cart-page section">
         <button type="button" className="cart-page-back" onClick={closeCartPanel}>← Continue shopping</button>
         {checkoutStep==="cart" && <>
           <div className="cart-page-heading">
