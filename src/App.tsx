@@ -253,6 +253,13 @@ export default function App() {
   const [photoZoomed,setPhotoZoomed] = useState(false);
   const [activeDetailTab,setActiveDetailTab] = useState<"specifications"|"description">("specifications");
 
+  // Automatically dismiss notification toasts while allowing manual dismissal.
+  useEffect(() => {
+    if (!notice) return;
+    const timeoutId = window.setTimeout(() => setNotice(""), 4500);
+    return () => window.clearTimeout(timeoutId);
+  }, [notice]);
+
   const refresh = async (sessionUser: any = user) => {
     if (!db) return;
     // Guests can browse public listing details, but never receive seller phone numbers.
@@ -1320,7 +1327,7 @@ export default function App() {
       </>}
       <span className="photo-lightbox-count">{activeProductImage+1} / {selectedProduct.image_urls?.length || 1}</span>
     </div>}
-    {notice && <button className="notice" onClick={()=>setNotice("")}>{notice}　×</button>}
+    {notice && <div className="notice" role="status" aria-live="polite"><span>{notice}</span><button type="button" className="notice-dismiss" aria-label="Dismiss notification" onClick={()=>setNotice("")}>×</button></div>}
     {profilePanel && user && <div className="overlay" onClick={closeProfilePanel}>
       <div className="modal wide profile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="profile-panel-title" onClick={e=>e.stopPropagation()}>
         <button className="close" type="button" aria-label="Close profile window" onClick={closeProfilePanel}>×</button>
