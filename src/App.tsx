@@ -217,7 +217,7 @@ export default function App() {
   const [phoneChangeCode,setPhoneChangeCode] = useState("");
   const [profileSaving,setProfileSaving] = useState(false);
   const [cartItems,setCartItems] = useState<Listing[]>([]);
-  const [cartPanelOpen,setCartPanelOpen] = useState(false);
+  const [showCartPage,setShowCartPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/cart");
   const [checkoutStep,setCheckoutStep] = useState<"cart"|"address"|"review"|"success">("cart");
   const [checkoutItemIds,setCheckoutItemIds] = useState<string[]>([]);
   const [addresses,setAddresses] = useState<CustomerAddress[]>([]);
@@ -400,6 +400,8 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const categoryPage = categoryFromPath();
+      const cartPage = window.location.pathname.replace(/\/+$/,"")==="/cart";
+      setShowCartPage(cartPage);
       setSelectedProductId(productIdFromPath());
       setSelectedCategoryPage(categoryPage);
       setShowAllProductsPage(isAllProductsPath());
@@ -407,6 +409,7 @@ export default function App() {
       setCategory(categoryPage ?? "All");
       setActiveProductImage(0);
       setActiveDetailTab("specifications");
+      window.scrollTo({top:0,behavior:"auto"});
     };
     window.addEventListener("popstate",handlePopState);
     return () => window.removeEventListener("popstate",handlePopState);
@@ -675,7 +678,6 @@ export default function App() {
     setCartItems([]);
     setAddresses([]);
     setSelectedAddressId("");
-    setCartPanelOpen(false);
     setCheckoutItemIds([]);
     // Clear the locally held auth form values as well as the Supabase session.
     setEmail("");
@@ -856,30 +858,62 @@ export default function App() {
   const addToCart = async (item:Listing) => {
     await persistCartItem(item,true);
   };
-  const openCart = () => {
+  const openCartPage = () => {
     if (!user) { requireLoginForCommerce(); return; }
+    if (!showCartPage) {
+      const returnTo = window.location.pathname + window.location.search + window.location.hash;
+      window.history.pushState({fromCartPage:true,returnTo},"","/cart");
+    }
+    setShowCartPage(true);
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
     setCheckoutStep("cart");
     setCheckoutItemIds([]);
     setAddressFormOpen(false);
-    setCartPanelOpen(true);
+    setProfileMenuOpen(false);
+    window.scrollTo({top:0,behavior:"smooth"});
   };
   const closeCartPanel = () => {
-    setCartPanelOpen(false);
     setCheckoutStep("cart");
     setCheckoutItemIds([]);
     setAddressFormOpen(false);
     setAddressDraft(emptyAddressDraft);
+    if (window.location.pathname.replace(/\/+$/,"")==="/cart") {
+      if (window.history.state?.fromCartPage) {
+        window.history.back();
+      } else {
+        window.history.replaceState({},"","/");
+        setShowCartPage(false);
+        setSelectedProductId(null);
+        setSelectedCategoryPage(null);
+        setShowAllCategoriesPage(false);
+        setShowAllProductsPage(false);
+        setCategory("All");
+        window.scrollTo({top:0,behavior:"smooth"});
+      }
+    }
   };
   const buyNow = async (item:Listing) => {
     if (!user) { requireLoginForCommerce(); return; }
     const saved = await persistCartItem(item,false);
     if (!saved) return;
+    if (!showCartPage) {
+      const returnTo = window.location.pathname + window.location.search + window.location.hash;
+      window.history.pushState({fromCartPage:true,returnTo},"","/cart");
+    }
+    setShowCartPage(true);
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
     setCheckoutItemIds([item.id]);
     setCheckoutStep("address");
     setSelectedAddressId(current=>addresses.some(address=>address.id===current)
       ? current : addresses.find(address=>address.is_default)?.id || addresses[0]?.id || "");
     setAddressFormOpen(addresses.length===0);
-    setCartPanelOpen(true);
+    window.scrollTo({top:0,behavior:"smooth"});
   };
   const removeCartItem = async (itemId:string) => {
     if (!db || !user) return;
