@@ -434,6 +434,18 @@ Deno.serve(async (request: Request) => {
       if (paymentStatus && !["pending", "paid"].includes(paymentStatus)) {
         return respond({ error: "Only prepaid payment states pending and paid are accepted. COD is not supported." }, 400);
       }
+      const { data: currentOrder, error: currentError } = await adminDb.from("marketplace_orders")
+        .select("id,status,payment_status,is_test_order").eq("id", orderId).maybeSingle();
+      if (currentError || !currentOrder) return respond({ error: "Order request was not found." }, 404);
+      if (paymentStatus === "paid") {
+        if (currentOrder.is_test_order) return respond({ error: "₹1 test orders cannot be marked as paid or shipped." }, 409);
+        if (!["confirmed", "processing"].includes(status || currentOrder.status)) {
+          return respond({ error: "Confirm the order before marking its prepaid payment as received." }, 409);
+        }
+      }
+      if (currentOrder.status === "cancelled" || currentOrder.status === "delivered") {
+        return respond({ error: "A cancelled or delivered order cannot be changed through this action." }, 409);
+      }
       const patch: Record<string, unknown> = {};
       if (status) patch.status = status;
       if (paymentStatus) patch.payment_status = paymentStatus;
