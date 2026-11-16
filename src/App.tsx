@@ -7,6 +7,7 @@ type Listing = {
   condition: string; city: string; state: string; contact_phone: string;
   seller_name: string; image_urls: string[]; status: string; created_at: string;
   quantity?: number; stock?: number;
+  package_weight_kg?: number | null; package_length_cm?: number | null; package_breadth_cm?: number | null; package_height_cm?: number | null;
 };
 type CustomerAddress = {
   id: string; full_name: string; phone: string; pincode: string;
@@ -262,6 +263,10 @@ export default function App() {
   const [addressFormOpen,setAddressFormOpen] = useState(false);
   const [addressDraft,setAddressDraft] = useState<AddressDraft>(emptyAddressDraft);
   const [commerceSaving,setCommerceSaving] = useState(false);
+  const [shippingQuoteId,setShippingQuoteId] = useState("");
+  const [shippingQuotes,setShippingQuotes] = useState<Array<{courier_id:number;courier_name:string;rate:number;etd?:string;estimated_delivery_days?:number}>>([]);
+  const [selectedShippingCourierId,setSelectedShippingCourierId] = useState<number|null>(null);
+  const [shippingQuoteBusy,setShippingQuoteBusy] = useState(false);
   const [completedOrderId,setCompletedOrderId] = useState("");
   const profileMenuRef = useRef<HTMLDivElement|null>(null);
   const [sellOpen,setSellOpen] = useState(false);
@@ -278,6 +283,10 @@ export default function App() {
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
   const [price,setPrice] = useState("");
+  const [packageWeightKg,setPackageWeightKg] = useState("");
+  const [packageLengthCm,setPackageLengthCm] = useState("");
+  const [packageBreadthCm,setPackageBreadthCm] = useState("");
+  const [packageHeightCm,setPackageHeightCm] = useState("");
   const [condition,setCondition] = useState("Good");
   const [city,setCity] = useState("");
   const [state,setState] = useState("");
@@ -732,8 +741,8 @@ export default function App() {
   const submitListing = async (event:FormEvent) => {
     event.preventDefault();
     if (!db || !user) { setNotice("Please sign in before posting a listing."); setAuthOpen(true); return; }
-    if (!title.trim() || description.trim().length < 20 || Number(price) <= 0 || !city.trim() || !state.trim() || phone.replace(/\D/g,"").length < 10) {
-      setNotice("Complete all fields and enter a valid 10-digit phone number."); return;
+    if (!title.trim() || description.trim().length < 20 || Number(price) <= 0 || !city.trim() || !state.trim() || phone.replace(/\D/g,"").length < 10 || Number(packageWeightKg)<=0 || Number(packageLengthCm)<=0.5 || Number(packageBreadthCm)<=0.5 || Number(packageHeightCm)<=0.5) {
+      setNotice("Complete all fields, enter packed weight and dimensions, and provide a valid 10-digit phone number."); return;
     }
     const imageUrls:string[] = [];
     if (photos?.length) {
@@ -750,10 +759,10 @@ export default function App() {
     const {error} = await db.from("listings").insert({
       seller_id:user.id,title:title.trim(),description:description.trim(),price:Number(price),
       category:formCategory,condition,city:city.trim(),state:state.trim(),contact_phone:phone.replace(/\D/g,""),
-      seller_name:user.user_metadata?.full_name || user.email?.split("@")[0] || "Seller",image_urls:imageUrls,status:"pending"
+      seller_name:user.user_metadata?.full_name || user.email?.split("@")[0] || "Seller",image_urls:imageUrls,status:"pending",package_weight_kg:Number(packageWeightKg),package_length_cm:Number(packageLengthCm),package_breadth_cm:Number(packageBreadthCm),package_height_cm:Number(packageHeightCm)
     });
     if (error) setNotice(error.message);
-    else { setNotice("Listing submitted for review. It will appear after approval."); setSellOpen(false); setTitle(""); setDescription(""); setPrice(""); setCity(""); setState(""); setPhone(""); setPhotos(null); }
+    else { setNotice("Listing submitted for review. It will appear after approval."); setSellOpen(false); setTitle(""); setDescription(""); setPrice(""); setCity(""); setState(""); setPhone(""); setPhotos(null); setPackageWeightKg(""); setPackageLengthCm(""); setPackageBreadthCm(""); setPackageHeightCm(""); }
   };
 
   const [formCategory,setFormCategory] = useState("Mobiles & Tablets");
@@ -1076,6 +1085,7 @@ export default function App() {
   const beginCartCheckout = () => {
     if (!cartItems.length) { setNotice("Your cart is empty. Add a product before checkout."); return; }
     setCheckoutItemIds(cartItems.map(item=>item.id));
+    setShippingQuoteId(""); setShippingQuotes([]); setSelectedShippingCourierId(null);
     setCheckoutStep("address");
     setAddressFormOpen(addresses.length===0);
     setSelectedAddressId(current=>addresses.some(address=>address.id===current)
@@ -1150,19 +1160,44 @@ export default function App() {
     if (selectedAddressId===addressId) setSelectedAddressId(remaining.find(address=>address.is_default)?.id || remaining[0]?.id || "");
     setNotice("Delivery address deleted.");
   };
+  const requestShippingQuotes = async () => {
+    if (!db || !user) { requireLoginForCommerce(); return; }
+    const address = addresses.find(item=>item.id===selectedAddressId);
+    if (!address) { setNotice("Select or save a delivery address before checking courier options."); return; }
+    if (!checkoutItems.length) { setNotice("Your checkout has no products."); return; }
+    setShippingQuoteBusy(true);
+    setShippingQuoteId(""); setShippingQuotes([]); setSelectedShippingCourierId(null);
+    const {data,error} = await db.functions.invoke("shiprocket",{
+      body:{action:"quote",addressId:address.id,itemIds:checkoutItems.map(item=>item.id)}
+    });
+    setShippingQuoteBusy(false);
+    if (error || !data?.quoteId) {
+      setNotice(data?.error || error?.message || "Could not calculate delivery options. Check that packed parcel details are saved for every product.");
+      return;
+    }
+    const options = Array.isArray(data.couriers) ? data.couriers : [];
+    setShippingQuoteId(data.quoteId);
+    setShippingQuotes(options);
+    if (options.length) setSelectedShippingCourierId(options[0].courier_id);
+    else setNotice("No Shiprocket courier service is currently available for this delivery PIN code.");
+  };
+
   const placeOrderRequest = async () => {
     if (!db || !user) { requireLoginForCommerce(); return; }
     const address = addresses.find(item=>item.id===selectedAddressId);
     const orderItems = cartItems.filter(item=>checkoutItemIds.includes(item.id));
     if (!address) { setNotice("Select a delivery address or add a new address."); return; }
     if (!orderItems.length) { setNotice("Your checkout has no items. Return to your cart and add a product."); return; }
+    if (!shippingQuoteId || selectedShippingCourierId===null) { setNotice("Check delivery options and select a courier before submitting your order request."); return; }
     setCommerceSaving(true);
     const {data,error} = await db.rpc("create_marketplace_order",{
       p_address_id:address.id,
       p_items:orderItems.map(item=>({
         id:item.id,title:item.title,price:Number(item.price),quantity:getCartQuantity(item),category:item.category,
         condition:item.condition,seller_name:item.seller_name,image_urls:item.image_urls || []
-      }))
+      })),
+      p_shipping_quote_id:shippingQuoteId,
+      p_courier_id:selectedShippingCourierId
     });
     setCommerceSaving(false);
     if (error) {
@@ -1182,6 +1217,8 @@ export default function App() {
   const cartQuantityCount = cartItems.reduce((total,item)=>total+getCartQuantity(item),0);
   const cartSubtotal = cartItems.reduce((total,item)=>total+Number(item.price || 0)*getCartQuantity(item),0);
   const chosenAddress = addresses.find(address=>address.id===selectedAddressId) || null;
+  const selectedShippingQuote = shippingQuotes.find(option=>option.courier_id===selectedShippingCourierId) || null;
+  const orderGrandTotal = checkoutSubtotal + (selectedShippingQuote?.rate || 0);
 
   const renderProductCards = (listings:Listing[],compact=false) => listings.length ? (
     <div className={compact ? "grid recent-products-grid" : "grid"}>
@@ -1347,7 +1384,7 @@ export default function App() {
               {addresses.length>0 && <div className="commerce-address-list">
                 {addresses.map(address=><article className={"commerce-address-option"+(selectedAddressId===address.id?" selected":"")} key={address.id}>
                   <label>
-                    <input type="radio" name="checkout-address" value={address.id} checked={selectedAddressId===address.id} onChange={()=>setSelectedAddressId(address.id)}/>
+                    <input type="radio" name="checkout-address" value={address.id} checked={selectedAddressId===address.id} onChange={()=>{setSelectedAddressId(address.id);setShippingQuoteId("");setShippingQuotes([]);setSelectedShippingCourierId(null);}}/>
                     <span className="commerce-address-copy">
                       <span className="commerce-address-title"><b>{address.full_name}</b><small>{address.address_type}</small>{address.is_default && <em>Default</em>}</span>
                       <span>{address.address_line1}, {address.address_line2}</span>
@@ -1383,13 +1420,26 @@ export default function App() {
                 <label className="commerce-default-toggle"><input type="checkbox" checked={addressDraft.is_default} onChange={event=>setAddressDraft(current=>({...current,is_default:event.target.checked}))}/> Save as my default address</label>
                 <button className="btn primary full" type="submit" disabled={commerceSaving}>{commerceSaving?"Saving address…":"Save address"}</button>
               </form>}
+              {chosenAddress && !addressFormOpen && <section className="shiprocket-quotes">
+                <div className="shiprocket-quotes-heading"><b>Delivery options</b><span>Shiprocket courier services</span></div>
+                <p>All parcels are dispatched from your shop pickup location. Rates are estimates based on the packed measurements saved by the seller and may change after final packing.</p>
+                <button type="button" className="btn light shiprocket-quote-button" disabled={shippingQuoteBusy || commerceSaving} onClick={()=>void requestShippingQuotes()}>{shippingQuoteBusy?"Checking courier rates…":"Check delivery options"}</button>
+                {shippingQuotes.length>0 && <div className="shiprocket-courier-list">
+                  {shippingQuotes.map(option=><label className={"shiprocket-courier-option"+(selectedShippingCourierId===option.courier_id?" selected":"")} key={option.courier_id}>
+                    <input type="radio" name="shipping-courier" checked={selectedShippingCourierId===option.courier_id} onChange={()=>setSelectedShippingCourierId(option.courier_id)}/>
+                    <span className="shiprocket-courier-copy"><b>{option.courier_name}</b><small>{option.etd || (option.estimated_delivery_days ? option.estimated_delivery_days+" days" : "Courier delivery estimate")}</small></span>
+                    <strong>{money(option.rate)}</strong>
+                  </label>)}
+                </div>}
+              </section>}
             </div>
             <aside className="cart-page-summary">
               <h2>Checkout Summary</h2>
               <div className="cart-summary-row"><span>Selected products</span><b>{checkoutItems.length}</b></div>
-              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(checkoutSubtotal)}</strong></div>
+              <div className="cart-summary-row"><span>Delivery fee</span><b>{selectedShippingQuote?money(selectedShippingQuote.rate):"Check options"}</b></div>
+              <div className="cart-summary-total"><span>Estimated total</span><strong>{money(orderGrandTotal)}</strong></div>
               <p className="commerce-note">Shipping and final availability are confirmed before the order is accepted.</p>
-              <button className="btn primary full cart-page-checkout" type="button" disabled={!chosenAddress || checkoutItems.length===0 || commerceSaving} onClick={()=>setCheckoutStep("review")}>Continue to review →</button>
+              <button className="btn primary full cart-page-checkout" type="button" disabled={!chosenAddress || checkoutItems.length===0 || !selectedShippingQuote || commerceSaving || shippingQuoteBusy onClick={()=>setCheckoutStep("review")}>Continue to review →</button>
             </aside>
           </div>
         </>}
@@ -1416,9 +1466,9 @@ export default function App() {
             <aside className="cart-page-summary">
               <h2>Order Summary</h2>
               <div className="cart-summary-row"><span>Products ({checkoutItems.length})</span><b>{money(checkoutSubtotal)}</b></div>
-              <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
-              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(checkoutSubtotal)}</strong></div>
-              <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. Demo listings are sample offers, so the seller must confirm the actual item, availability and final price. Delivery charges and payment arrangements will also be confirmed with you. No online payment is collected on this website.</p>
+              <div className="cart-summary-row"><span>Delivery · {selectedShippingQuote?.courier_name || "Courier not selected"}</span><b>{selectedShippingQuote?money(selectedShippingQuote.rate):"Not selected"}</b></div>
+              <div className="cart-summary-total"><span>Estimated total</span><strong>{money(orderGrandTotal)}</strong></div>
+              <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. The selected Shiprocket delivery rate is an estimate based on saved packed dimensions. Final packing, availability and payment are confirmed before the shipment is booked. No online payment is collected on this website.</p>
               <button className="btn primary full cart-page-checkout" type="button" disabled={commerceSaving || !chosenAddress || checkoutItems.length===0} onClick={()=>void placeOrderRequest()}>{commerceSaving?"Submitting order request…":"Place order request"}</button>
             </aside>
           </div>
@@ -1770,6 +1820,6 @@ export default function App() {
         <button type="button" className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setPasswordResetMode(null);setShowResendConfirmation(false);setEmail("");setPassword("");setConfirmPassword("");setFullName("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button>
       </>}
     </div></div>}
-    {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
+    {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><div className="shipping-package-fields"><b>Packed parcel details</b><small>Required for Shiprocket delivery estimates. Enter measurements after packing the product.</small><div className="row"><label>Packed weight (kg)<input required type="number" min="0.01" step="0.01" value={packageWeightKg} onChange={e=>setPackageWeightKg(e.target.value)} placeholder="e.g. 0.50"/></label><label>Length (cm)<input required type="number" min="0.6" step="0.1" value={packageLengthCm} onChange={e=>setPackageLengthCm(e.target.value)} placeholder="e.g. 20"/></label><label>Breadth (cm)<input required type="number" min="0.6" step="0.1" value={packageBreadthCm} onChange={e=>setPackageBreadthCm(e.target.value)} placeholder="e.g. 15"/></label><label>Height (cm)<input required type="number" min="0.6" step="0.1" value={packageHeightCm} onChange={e=>setPackageHeightCm(e.target.value)} placeholder="e.g. 10"/></label></div></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
   </div>;
 }
