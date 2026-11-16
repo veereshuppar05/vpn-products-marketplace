@@ -5374,3 +5374,230 @@ footer a:hover { color: var(--orange-dark); }
   .service-enquiry-success-actions > *,
   .service-enquiry-admin-actions > * { flex: 1 1 100%; justify-content: center; }
 }
+
+
+/* Compact enquiry form and category browsing so primary content fits above the fold on desktop. */
+@media (min-width: 1101px) {
+  .service-enquiry-page {
+    width: min(100%, 1560px);
+    padding: 10px clamp(22px, 3.2vw, 48px) 28px;
+  }
+  .service-enquiry-page > .cart-page-back {
+    padding: 4px 0;
+    margin-bottom: 3px;
+  }
+  .service-enquiry-heading {
+    margin: 2px 0 12px;
+  }
+  .service-enquiry-heading h1 {
+    font-size: var(--page-heading-size);
+    margin: 4px 0 5px;
+  }
+  .service-enquiry-heading p {
+    max-width: 980px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .service-enquiry-layout {
+    grid-template-columns: minmax(0, 1.75fr) minmax(270px, .78fr);
+    gap: 14px;
+  }
+  .service-enquiry-form {
+    gap: 9px;
+    padding: 15px 18px;
+    border-radius: 15px;
+  }
+  .service-enquiry-form-heading {
+    gap: 10px;
+    padding-bottom: 9px;
+  }
+  .service-enquiry-form-heading b {
+    font-size: 16px;
+  }
+  .service-enquiry-selected-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 12px;
+    font-size: 21px;
+  }
+  .service-enquiry-form label {
+    gap: 4px;
+    font-size: 11.5px;
+  }
+  .service-enquiry-field-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .service-enquiry-form input,
+  .service-enquiry-form select,
+  .service-enquiry-form textarea {
+    border-radius: 8px;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .service-enquiry-form input,
+  .service-enquiry-form select {
+    min-height: 38px;
+    height: 38px;
+  }
+  .service-enquiry-form textarea {
+    height: 68px;
+    min-height: 68px;
+    line-height: 1.4;
+  }
+  .service-enquiry-privacy {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .service-enquiry-submit {
+    min-height: 39px;
+    height: 39px;
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  .service-enquiry-aside {
+    gap: 10px;
+  }
+  .service-enquiry-service-summary,
+  .service-enquiry-contact {
+    padding: 15px;
+    border-radius: 15px;
+    gap: 8px;
+  }
+  .service-enquiry-service-summary h2 {
+    font-size: 17px;
+  }
+  .service-enquiry-service-summary p,
+  .service-enquiry-contact a {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .service-enquiry-contact b {
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 1101px) {
+  .category-page.section {
+    width: min(100%, 1560px);
+    padding: 12px clamp(22px, 3.2vw, 48px) 34px;
+    min-height: 0;
+  }
+  .category-page .category-page-back {
+    padding: 4px 0;
+    margin-bottom: 3px;
+  }
+  .category-page-heading {
+    margin: 7px 0 12px;
+  }
+  .category-page-heading h1 {
+    margin: 4px 0 5px;
+    font-size: var(--page-heading-size);
+    line-height: 1.18;
+  }
+  .category-page-heading p {
+    margin: 0 0 5px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .category-page .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 8px;
+    align-items: start;
+  }
+  .category-page .product {
+    border-radius: 14px;
+  }
+  .category-page .product-gallery {
+    padding: 8px;
+  }
+  .category-page .product-main-image {
+    height: 148px;
+    border-radius: 8px;
+  }
+  .category-page .product-thumbnails {
+    gap: 5px;
+    margin-top: 6px;
+  }
+  .category-page .product-thumbnails img {
+    flex-basis: 38px;
+    width: 38px;
+    height: 40px;
+  }
+  .category-page .product-body {
+    padding: 11px;
+  }
+  .category-page .product h3 {
+    margin: 5px 0;
+    font-size: 15px;
+    line-height: 1.3;
+  }
+  .category-page .product strong {
+    font-size: 18px;
+  }
+  .category-page .product p {
+    margin: 5px 0;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 561px) {
+  .service-enquiry-page {
+    padding: 14px 22px 30px;
+  }
+  .service-enquiry-heading {
+    margin: 4px 0 14px;
+  }
+  .service-enquiry-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .service-enquiry-form {
+    gap: 11px;
+    padding: 18px;
+  }
+  .service-enquiry-form textarea {
+    min-height: 88px;
+  }
+  .category-page.section {
+    padding: 14px 22px 34px;
+    min-height: 0;
+  }
+  .category-page-heading {
+    margin: 10px 0 14px;
+  }
+  .category-page-heading h1 {
+    font-size: var(--page-heading-size);
+  }
+  .category-page .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .category-page .product-main-image {
+    height: 140px;
+  }
+  .category-page .product-body {
+    padding: 11px;
+  }
+}
+
+@media (max-height: 820px) and (min-width: 1101px) {
+  .service-enquiry-page {
+    padding-top: 5px;
+    padding-bottom: 16px;
+  }
+  .service-enquiry-heading {
+    margin-bottom: 8px;
+  }
+  .service-enquiry-form {
+    gap: 7px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .service-enquiry-form textarea {
+    height: 58px;
+    min-height: 58px;
+  }
+}
