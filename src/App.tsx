@@ -1092,6 +1092,25 @@ export default function App() {
     void loadCommerceData(user);
     window.scrollTo({top:0,behavior:"smooth"});
   };
+  const notifyOrderEvent = async (
+    eventType:"order_placed"|"order_cancelled"|"return_requested",
+    orderId:string,
+    returnRequestId?:string
+  ) => {
+    if (!db || !user || !orderId) return;
+    const {data,error} = await db.functions.invoke("order-notifications",{
+      body:{eventType,orderId,...(returnRequestId ? {returnRequestId} : {})}
+    });
+    if (error || data?.error) {
+      console.warn("Order notification could not be delivered:", data?.error || error?.message);
+      return;
+    }
+    const statuses = data?.notifications || {};
+    if (Object.values(statuses).some((status:any)=>String(status).startsWith("failed:"))) {
+      console.warn("One or more order notification channels need attention:", statuses);
+    }
+  };
+
   const cancelCustomerOrder = async (orderId:string) => {
     if (!db || !user) { requireLoginForCommerce(); return; }
     if (!window.confirm("Cancel this order request? If a courier shipment has already been booked, cancellation will be sent to Shiprocket and may be refused after dispatch.")) return;
@@ -1100,6 +1119,7 @@ export default function App() {
     setOrderBusyId("");
     if (error || data?.error) { setNotice(data?.error || error?.message || "Could not cancel this order."); return; }
     setNotice("Order cancelled successfully.");
+    void notifyOrderEvent("order_cancelled",orderId);
     await loadCommerceData(user);
   };
   const refreshOrderTracking = async (orderId:string) => {
@@ -1124,6 +1144,7 @@ export default function App() {
     setReturnDetails("");
     setReturnReason("Damaged product");
     setNotice("Return request submitted. Our shop will review it.");
+    void notifyOrderEvent("return_requested",orderId,String(data));
     await loadCommerceData(user);
   };
   const adminUpdateOrder = async (orderId:string,status?:string,paymentStatus?:string) => {
@@ -1374,6 +1395,7 @@ export default function App() {
     if (removeError) setNotice("Your order request was submitted, but the cart could not be cleared. You can remove the items manually.");
     setCartItems(current=>current.filter(item=>!orderedIds.includes(item.id)));
     setCompletedOrderId(String(data || ""));
+    void notifyOrderEvent("order_placed",String(data || ""));
     setCheckoutStep("success");
     setCheckoutItemIds([]);
   };
