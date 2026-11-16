@@ -3570,3 +3570,78 @@ footer a:hover { color: var(--orange-dark); }
     font-size: 10px;
   }
 }
+
+
+/* Hard override: Add to Cart and Buy Now must have identical dimensions in every product grid. */
+.product-buy-actions,
+.recent-products-grid .product-buy-actions,
+.all-products-page .product-buy-actions,
+.category-page .product-buy-actions,
+.detail-buy-actions {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+.product-buy-actions > .btn,
+.recent-products-grid .product-buy-actions > .btn,
+.all-products-page .product-buy-actions > .btn,
+.category-page .product-buy-actions > .btn,
+.detail-buy-actions > .btn {
+  display: inline-flex !important;
+  flex: 1 1 0px !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 4px !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+.product-buy-actions > .product-cart-button,
+.recent-products-grid .product-buy-actions > .product-cart-button,
+.all-products-page .product-buy-actions > .product-cart-button,
+.category-page .product-buy-actions > .product-cart-button,
+.detail-buy-actions > .detail-cart-button {
+  background: linear-gradient(180deg, #f1f7ff 0%, #e3efff 100%) !important;
+  color: #174b91 !important;
+  border: 1px solid #bcd4f5 !important;
+  box-shadow: 0 2px 6px #1769e012 !important;
+}
+.product-buy-actions > .product-cart-button:hover,
+.recent-products-grid .product-buy-actions > .product-cart-button:hover,
+.all-products-page .product-buy-actions > .product-cart-button:hover,
+.category-page .product-buy-actions > .product-cart-button:hover,
+.detail-buy-actions > .detail-cart-button:hover {
+  background: linear-gradient(180deg, #e6f1ff 0%, #d5e7ff 100%) !important;
+  color: #103e7f !important;
+  border-color: #91b8ed !important;
+}
+@media (max-width: 680px) {
+  .product-buy-actions,
+  .recent-products-grid .product-buy-actions,
+  .all-products-page .product-buy-actions,
+  .category-page .product-buy-actions,
+  .detail-buy-actions { gap: 6px !important; }
+  .product-buy-actions > .btn,
+  .recent-products-grid .product-buy-actions > .btn,
+  .all-products-page .product-buy-actions > .btn,
+  .category-page .product-buy-actions > .btn,
+  .detail-buy-actions > .btn {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    font-size: 10px !important;
+  }
+}
