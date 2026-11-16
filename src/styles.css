@@ -4681,3 +4681,53 @@ footer a:hover { color: var(--orange-dark); }
 @media (max-width: 560px) {
   .cart-page-heading .shopping-cart-title { font-size: 23px !important; }
 }
+
+
+/* Site-wide compact heading scale: keep page and section titles consistent. */
+#home-hero h1,
+.category-page-heading h1,
+.cart-page-heading h1,
+.detail-summary-card h1,
+.cart-page-success h1 {
+  font-size: clamp(23px, 2.4vw, 29px) !important;
+  line-height: 1.16 !important;
+  letter-spacing: -.45px !important;
+}
+.section-title h2,
+.category-section .section-title h2,
+.services .section-title h2,
+.sell-cta h2,
+.modal h2,
+.commerce-modal h2,
+#profile-panel-title,
+.commerce-success h2 {
+  font-size: clamp(20px, 2.1vw, 25px) !important;
+  line-height: 1.2 !important;
+}
+/* Keep intentionally smaller summary and product-detail subheadings in their hierarchy. */
+.cart-page-summary h2 { font-size: 19px !important; }
+.detail-description h2,
+.detail-specifications h2,
+.detail-description-panel h2 { font-size: 19px !important; }
+.cart-page-empty h2 { font-size: 22px !important; }
+
+@media (max-width: 560px) {
+  #home-hero h1,
+  .category-page-heading h1,
+  .cart-page-heading h1,
+  .detail-summary-card h1,
+  .cart-page-success h1 {
+    font-size: 23px !important;
+    line-height: 1.18 !important;
+  }
+  .section-title h2,
+  .category-section .section-title h2,
+  .services .section-title h2,
+  .sell-cta h2,
+  .modal h2,
+  .commerce-modal h2,
+  #profile-panel-title,
+  .commerce-success h2 {
+    font-size: 20px !important;
+  }
+}
