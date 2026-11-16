@@ -43,7 +43,7 @@ New customer accounts and sign-ins both use an email address and password. Phone
 
 ## Shiprocket setup
 
-This project uses one Shiprocket pickup location for all orders. Register your shop's real pickup address in Shiprocket first. The pickup-location name used in API requests must exactly match the name saved in your Shiprocket account.
+This project uses one Shiprocket pickup location for all orders. Register your shop's real pickup address in Shiprocket first. The pickup-location name used in API requests must exactly match the name saved in your Shiprocket account. Every third-party seller must bring accepted items to this shop for consolidation, packing and courier pickup; sellers do not dispatch directly from their own addresses.
 
 ### 1. Add Supabase server secrets
 
