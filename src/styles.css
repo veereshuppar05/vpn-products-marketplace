@@ -3044,3 +3044,5 @@ footer a:hover { color: var(--orange-dark); }
   .commerce-checkout-footer .btn { width: 100%; }
   .commerce-address-option { padding: 11px; }
 }
+
+.commerce-whatsapp-followup { text-decoration: none; margin: 14px 0 8px; }
