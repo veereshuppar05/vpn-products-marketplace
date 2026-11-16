@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import indiaStatesDistricts from "./data/india_states_districts.json";
 
 type Listing = {
   id: string; title: string; description: string; price: number; category: string;
@@ -10,17 +11,17 @@ type Listing = {
 type CustomerAddress = {
   id: string; full_name: string; phone: string; pincode: string;
   address_line1: string; address_line2: string; landmark: string | null;
-  city: string; state: string; address_type: "Home" | "Work" | "Other";
+  city: string; state: string; district?: string | null; address_type: "Home" | "Work" | "Other";
   is_default: boolean; created_at: string;
 };
 type AddressDraft = {
   full_name: string; phone: string; pincode: string; address_line1: string;
-  address_line2: string; landmark: string; city: string; state: string;
+  address_line2: string; landmark: string; city: string; state: string; district: string;
   address_type: "Home" | "Work" | "Other"; is_default: boolean;
 };
 const emptyAddressDraft:AddressDraft = {
   full_name:"",phone:"",pincode:"",address_line1:"",address_line2:"",
-  landmark:"",city:"",state:"Karnataka",address_type:"Home",is_default:false
+  landmark:"",city:"",state:"",district:"",address_type:"Home",is_default:false
 };
 const isPreviewProduct = (item:Listing) => item.id.startsWith("demo-") || item.id.startsWith("sample-");
 // Temporary sample stock is set per demo product. Replace these values with the
@@ -1093,8 +1094,14 @@ export default function App() {
       return;
     }
     if (pinDigits.length!==6) { setNotice("Enter a valid 6-digit PIN code."); return; }
+    const selectedState = indiaStatesDistricts.find(stateOption=>stateOption.name===addressDraft.state);
+    const selectedDistrictIsValid = Boolean(selectedState?.districts.some(districtOption=>districtOption.name===addressDraft.district));
+    if (!selectedDistrictIsValid) {
+      setNotice("Select a valid district for the chosen state or union territory.");
+      return;
+    }
     if (!addressDraft.full_name.trim() || !addressDraft.address_line1.trim()
-      || !addressDraft.address_line2.trim() || !addressDraft.city.trim() || !addressDraft.state.trim()) {
+      || !addressDraft.address_line2.trim() || !addressDraft.city.trim() || !addressDraft.state.trim() || !addressDraft.district.trim()) {
       setNotice("Complete all required delivery address fields.");
       return;
     }
@@ -1118,6 +1125,7 @@ export default function App() {
       landmark:addressDraft.landmark.trim() || null,
       city:addressDraft.city.trim(),
       state:addressDraft.state.trim(),
+      district:addressDraft.district.trim(),
       address_type:addressDraft.address_type,
       is_default:addressDraft.is_default || addresses.length===0
     }).select("*").single();
@@ -1344,7 +1352,7 @@ export default function App() {
                       <span className="commerce-address-title"><b>{address.full_name}</b><small>{address.address_type}</small>{address.is_default && <em>Default</em>}</span>
                       <span>{address.address_line1}, {address.address_line2}</span>
                       {address.landmark && <span>Landmark: {address.landmark}</span>}
-                      <span>{address.city}, {address.state} - {address.pincode}</span>
+                      <span>{address.city}{address.district?", "+address.district:""}, {address.state} - {address.pincode}</span>
                       <span>Mobile: +91 {address.phone}</span>
                     </span>
                   </label>
@@ -1362,7 +1370,14 @@ export default function App() {
                   <label>Area, street or village<input required maxLength={160} autoComplete="address-line2" value={addressDraft.address_line2} onChange={event=>setAddressDraft(current=>({...current,address_line2:event.target.value}))} placeholder="Street, area or village"/></label>
                   <label>Landmark (optional)<input maxLength={120} value={addressDraft.landmark} onChange={event=>setAddressDraft(current=>({...current,landmark:event.target.value}))} placeholder="Nearby landmark"/></label>
                   <label>Town / city<input required maxLength={80} autoComplete="address-level2" value={addressDraft.city} onChange={event=>setAddressDraft(current=>({...current,city:event.target.value}))} placeholder="City or town"/></label>
-                  <label>State<input required maxLength={80} autoComplete="address-level1" value={addressDraft.state} onChange={event=>setAddressDraft(current=>({...current,state:event.target.value}))} placeholder="State"/></label>
+                  <label>State / Union Territory<select required autoComplete="address-level1" value={addressDraft.state} onChange={event=>setAddressDraft(current=>({...current,state:event.target.value,district:""}))}>
+                    <option value="">Select state / UT</option>
+                    {indiaStatesDistricts.map(stateOption=><option key={stateOption.code} value={stateOption.name}>{stateOption.name}</option>)}
+                  </select></label>
+                  <label>District<select required autoComplete="address-level2" value={addressDraft.district} disabled={!addressDraft.state} onChange={event=>setAddressDraft(current=>({...current,district:event.target.value}))}>
+                    <option value="">{addressDraft.state?"Select district":"Select state first"}</option>
+                    {(indiaStatesDistricts.find(stateOption=>stateOption.name===addressDraft.state)?.districts ?? []).map(districtOption=><option key={districtOption.code} value={districtOption.name}>{districtOption.name}</option>)}
+                  </select></label>
                   <label>Address type<select value={addressDraft.address_type} onChange={event=>setAddressDraft(current=>({...current,address_type:event.target.value as AddressDraft["address_type"]}))}><option value="Home">Home</option><option value="Work">Work</option><option value="Other">Other</option></select></label>
                 </div>
                 <label className="commerce-default-toggle"><input type="checkbox" checked={addressDraft.is_default} onChange={event=>setAddressDraft(current=>({...current,is_default:event.target.checked}))}/> Save as my default address</label>
@@ -1389,7 +1404,7 @@ export default function App() {
               {chosenAddress && <div className="commerce-review-address">
                 <b>Deliver to</b>
                 <strong>{chosenAddress.full_name} · +91 {chosenAddress.phone}</strong>
-                <span>{chosenAddress.address_line1}, {chosenAddress.address_line2}{chosenAddress.landmark?", "+chosenAddress.landmark:""}, {chosenAddress.city}, {chosenAddress.state} - {chosenAddress.pincode}</span>
+                <span>{chosenAddress.address_line1}, {chosenAddress.address_line2}{chosenAddress.landmark?", "+chosenAddress.landmark:""}, {chosenAddress.city}{chosenAddress.district?", "+chosenAddress.district:""}, {chosenAddress.state} - {chosenAddress.pincode}</span>
                 <button type="button" className="commerce-back" onClick={()=>setCheckoutStep("address")}>Change delivery address</button>
               </div>}
               <div className="commerce-review-items">
