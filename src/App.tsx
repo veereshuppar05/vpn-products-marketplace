@@ -812,7 +812,174 @@ export default function App() {
     }
     const link = "https://wa.me/91" + item.contact_phone.replace(/\D/g,"").replace(/^91/,"") + "?text=" + encodeURIComponent("Hi, I am interested in buying " + item.title + " listed on VPN Products and Services.");
     window.open(link, "_blank", "noopener,noreferrer");
-  };  
+  };
+
+  const requireLoginForCommerce = () => {
+    setMode("login");
+    setNotice("Please sign in or create an account to use the shopping cart and checkout.");
+    setAuthOpen(true);
+  };
+  const persistCartItem = async (item:Listing,showMessage=true):Promise<boolean> => {
+    if (!user) { requireLoginForCommerce(); return false; }
+    if (!db) { setNotice("Cart is unavailable because the Supabase connection is not configured."); return false; }
+    if (isPreviewProduct(item)) {
+      setNotice("This is a demo preview product and cannot be ordered. Choose a live marketplace listing instead.");
+      return false;
+    }
+    if (cartItems.some(current=>current.id===item.id)) {
+      if (showMessage) setNotice("This product is already in your cart.");
+      return true;
+    }
+    const snapshot = {
+      id:item.id,title:item.title,description:item.description,price:Number(item.price),
+      category:item.category,condition:item.condition,city:item.city,state:item.state,
+      seller_name:item.seller_name,image_urls:item.image_urls || []
+    };
+    const {error} = await db.from("cart_items").upsert({
+      user_id:user.id,item_key:item.id,item_snapshot:snapshot
+    },{onConflict:"user_id,item_key"});
+    if (error) {
+      setNotice("Could not save this item to your cart. Run supabase/commerce.sql in Supabase SQL Editor. " + error.message);
+      return false;
+    }
+    setCartItems(current=>current.some(existing=>existing.id===item.id)?current:[...current,item]);
+    if (showMessage) setNotice("Added to your cart.");
+    return true;
+  };
+  const addToCart = async (item:Listing) => {
+    await persistCartItem(item,true);
+  };
+  const openCart = () => {
+    if (!user) { requireLoginForCommerce(); return; }
+    setCheckoutStep("cart");
+    setCheckoutItemIds([]);
+    setAddressFormOpen(false);
+    setCartPanelOpen(true);
+  };
+  const closeCartPanel = () => {
+    setCartPanelOpen(false);
+    setCheckoutStep("cart");
+    setCheckoutItemIds([]);
+    setAddressFormOpen(false);
+    setAddressDraft(emptyAddressDraft);
+  };
+  const buyNow = async (item:Listing) => {
+    if (!user) { requireLoginForCommerce(); return; }
+    const saved = await persistCartItem(item,false);
+    if (!saved) return;
+    setCheckoutItemIds([item.id]);
+    setCheckoutStep("address");
+    setSelectedAddressId(current=>addresses.some(address=>address.id===current)
+      ? current : addresses.find(address=>address.is_default)?.id || addresses[0]?.id || "");
+    setAddressFormOpen(addresses.length===0);
+    setCartPanelOpen(true);
+  };
+  const removeCartItem = async (itemId:string) => {
+    if (!db || !user) return;
+    const {error} = await db.from("cart_items").delete().eq("user_id",user.id).eq("item_key",itemId);
+    if (error) { setNotice("Could not remove this cart item: " + error.message); return; }
+    setCartItems(current=>current.filter(item=>item.id!==itemId));
+    setCheckoutItemIds(current=>current.filter(id=>id!==itemId));
+    setNotice("Item removed from your cart.");
+  };
+  const beginCartCheckout = () => {
+    if (!cartItems.length) { setNotice("Your cart is empty. Add a product before checkout."); return; }
+    setCheckoutItemIds(cartItems.map(item=>item.id));
+    setCheckoutStep("address");
+    setAddressFormOpen(addresses.length===0);
+    setSelectedAddressId(current=>addresses.some(address=>address.id===current)
+      ? current : addresses.find(address=>address.is_default)?.id || addresses[0]?.id || "");
+  };
+  const saveCustomerAddress = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db || !user) { requireLoginForCommerce(); return; }
+    const phoneDigits = addressDraft.phone.replace(/\D/g,"");
+    const pinDigits = addressDraft.pincode.replace(/\D/g,"");
+    if (phoneDigits.length!==10 || !/^[6-9]/.test(phoneDigits)) {
+      setNotice("Enter a valid 10-digit Indian mobile number for the delivery address.");
+      return;
+    }
+    if (pinDigits.length!==6) { setNotice("Enter a valid 6-digit PIN code."); return; }
+    if (!addressDraft.full_name.trim() || !addressDraft.address_line1.trim()
+      || !addressDraft.address_line2.trim() || !addressDraft.city.trim() || !addressDraft.state.trim()) {
+      setNotice("Complete all required delivery address fields.");
+      return;
+    }
+    setCommerceSaving(true);
+    if (addressDraft.is_default) {
+      const {error:defaultError} = await db.from("customer_addresses")
+        .update({is_default:false}).eq("user_id",user.id).eq("is_default",true);
+      if (defaultError) {
+        setCommerceSaving(false);
+        setNotice("Could not update the default address. " + defaultError.message);
+        return;
+      }
+    }
+    const {data,error} = await db.from("customer_addresses").insert({
+      user_id:user.id,
+      full_name:addressDraft.full_name.trim(),
+      phone:phoneDigits,
+      pincode:pinDigits,
+      address_line1:addressDraft.address_line1.trim(),
+      address_line2:addressDraft.address_line2.trim(),
+      landmark:addressDraft.landmark.trim() || null,
+      city:addressDraft.city.trim(),
+      state:addressDraft.state.trim(),
+      address_type:addressDraft.address_type,
+      is_default:addressDraft.is_default || addresses.length===0
+    }).select("*").single();
+    setCommerceSaving(false);
+    if (error) {
+      setNotice("Could not save the delivery address. Make sure supabase/commerce.sql has been run. " + error.message);
+      return;
+    }
+    const savedAddress = data as CustomerAddress;
+    setAddresses(current=>[savedAddress,...current.map(address=>savedAddress.is_default?{...address,is_default:false}:address)]);
+    setSelectedAddressId(savedAddress.id);
+    setAddressFormOpen(false);
+    setAddressDraft(emptyAddressDraft);
+    setNotice("Delivery address saved.");
+  };
+  const deleteCustomerAddress = async (addressId:string) => {
+    if (!db || !user) return;
+    const {error} = await db.from("customer_addresses").delete().eq("id",addressId).eq("user_id",user.id);
+    if (error) { setNotice("Could not delete this address: " + error.message); return; }
+    const remaining = addresses.filter(address=>address.id!==addressId);
+    setAddresses(remaining);
+    if (selectedAddressId===addressId) setSelectedAddressId(remaining.find(address=>address.is_default)?.id || remaining[0]?.id || "");
+    setNotice("Delivery address deleted.");
+  };
+  const placeOrderRequest = async () => {
+    if (!db || !user) { requireLoginForCommerce(); return; }
+    const address = addresses.find(item=>item.id===selectedAddressId);
+    const orderItems = cartItems.filter(item=>checkoutItemIds.includes(item.id));
+    if (!address) { setNotice("Select a delivery address or add a new address."); return; }
+    if (!orderItems.length) { setNotice("Your checkout has no items. Return to your cart and add a product."); return; }
+    setCommerceSaving(true);
+    const {data,error} = await db.rpc("create_marketplace_order",{
+      p_address_id:address.id,
+      p_items:orderItems.map(item=>({
+        id:item.id,title:item.title,price:Number(item.price),category:item.category,
+        condition:item.condition,seller_name:item.seller_name,image_urls:item.image_urls || []
+      }))
+    });
+    setCommerceSaving(false);
+    if (error) {
+      setNotice("Could not submit your order request. " + error.message);
+      return;
+    }
+    const orderedIds = orderItems.map(item=>item.id);
+    const {error:removeError} = await db.from("cart_items").delete().eq("user_id",user.id).in("item_key",orderedIds);
+    if (removeError) setNotice("Your order request was submitted, but the cart could not be cleared. You can remove the items manually.");
+    setCartItems(current=>current.filter(item=>!orderedIds.includes(item.id)));
+    setCompletedOrderId(String(data || ""));
+    setCheckoutStep("success");
+    setCheckoutItemIds([]);
+  };
+  const checkoutItems = cartItems.filter(item=>checkoutItemIds.includes(item.id));
+  const checkoutSubtotal = checkoutItems.reduce((total,item)=>total+Number(item.price || 0),0);
+  const chosenAddress = addresses.find(address=>address.id===selectedAddressId) || null;
+
   const renderProductCards = (listings:Listing[],compact=false) => listings.length ? (
     <div className={compact ? "grid recent-products-grid" : "grid"}>
       {listings.map(item=>(
