@@ -110,7 +110,6 @@ declare
   v_delivery_fee numeric(12,2);
   v_shipping_package jsonb;
   v_shipping_eta text;
-  v_is_test_product boolean := false;
   v_is_test_order boolean := false;
 begin
   if v_user_id is null then
