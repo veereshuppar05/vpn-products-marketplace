@@ -1122,7 +1122,141 @@ export default function App() {
         </div>}
       </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
-      {selectedProduct ? <section className="product-detail-page">
+      {showCartPage ? <section className="cart-page section">
+        <button type="button" className="cart-page-back" onClick={closeCartPanel}>← Continue shopping</button>
+        {checkoutStep==="cart" && <>
+          <div className="cart-page-heading">
+            <span className="eyebrow">YOUR SHOPPING BAG</span>
+            <h1>Shopping Cart</h1>
+            <p>{cartItems.length} {cartItems.length===1?"product":"products"} in your cart</p>
+          </div>
+          {!user ? <div className="cart-page-empty">
+            <span className="cart-page-empty-icon" aria-hidden="true">♙</span>
+            <h2>Sign in to view your cart</h2>
+            <p>Your saved products will appear here after you sign in.</p>
+            <button type="button" className="btn primary" onClick={requireLoginForCommerce}>Sign in</button>
+          </div> : cartItems.length===0 ? <div className="cart-page-empty">
+            <span className="cart-page-empty-icon" aria-hidden="true">🛒</span>
+            <h2>Your cart is empty</h2>
+            <p>You haven't added any products yet. Explore the marketplace and add products you would like to buy.</p>
+            <button type="button" className="btn primary" onClick={closeCartPanel}>Browse products</button>
+          </div> : <div className="cart-page-layout">
+            <div className="cart-page-items">
+              {cartItems.map(item=><article className="commerce-cart-item cart-page-item" key={item.id}>
+                <img src={item.image_urls?.[0] || "/vpn-logo.webp"} alt={item.title}/>
+                <div className="commerce-cart-item-info">
+                  <b>{item.title}</b>
+                  <small>{item.category} · {item.condition}</small>
+                  <small>{item.city}, {item.state}</small>
+                  <strong>{money(Number(item.price))}</strong>
+                  <span className="cart-page-seller">Seller: {item.seller_name || "Marketplace seller"}</span>
+                </div>
+                <button type="button" className="commerce-remove-button" onClick={()=>void removeCartItem(item.id)}>Remove</button>
+              </article>)}
+              <button type="button" className="cart-page-continue" onClick={closeCartPanel}>← Continue shopping</button>
+            </div>
+            <aside className="cart-page-summary">
+              <h2>Order Summary</h2>
+              <div className="cart-summary-row"><span>Items ({cartItems.length})</span><b>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</b></div>
+              <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
+              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</strong></div>
+              <p className="commerce-note">Delivery charges and final availability are confirmed by the seller before the order is accepted.</p>
+              <button className="btn primary full cart-page-checkout" type="button" onClick={beginCartCheckout}>Proceed to checkout →</button>
+              <div className="cart-page-secure-note"><span aria-hidden="true">✓</span> Your cart is saved to your account</div>
+            </aside>
+          </div>}
+        </>}
+        {checkoutStep==="address" && <>
+          <div className="cart-page-heading">
+            <span className="eyebrow">CHECKOUT · STEP 1 OF 2</span>
+            <h1>Select delivery address</h1>
+            <p>Choose where you want your order delivered, or add a new address.</p>
+          </div>
+          <div className="cart-checkout-layout">
+            <div className="cart-checkout-main">
+              {addresses.length>0 && <div className="commerce-address-list">
+                {addresses.map(address=><article className={"commerce-address-option"+(selectedAddressId===address.id?" selected":"")} key={address.id}>
+                  <label>
+                    <input type="radio" name="checkout-address" value={address.id} checked={selectedAddressId===address.id} onChange={()=>setSelectedAddressId(address.id)}/>
+                    <span className="commerce-address-copy">
+                      <span className="commerce-address-title"><b>{address.full_name}</b><small>{address.address_type}</small>{address.is_default && <em>Default</em>}</span>
+                      <span>{address.address_line1}, {address.address_line2}</span>
+                      {address.landmark && <span>Landmark: {address.landmark}</span>}
+                      <span>{address.city}, {address.state} - {address.pincode}</span>
+                      <span>Mobile: +91 {address.phone}</span>
+                    </span>
+                  </label>
+                  <button type="button" className="commerce-remove-button" onClick={()=>void deleteCustomerAddress(address.id)}>Delete</button>
+                </article>)}
+              </div>}
+              {!addressFormOpen && <button type="button" className="commerce-add-address" onClick={()=>{setAddressDraft(emptyAddressDraft);setAddressFormOpen(true);}}>＋ Add a new delivery address</button>}
+              {addressFormOpen && <form className="commerce-address-form" onSubmit={saveCustomerAddress}>
+                <div className="commerce-form-heading"><b>Add delivery address</b><button type="button" className="commerce-cancel-form" onClick={()=>{setAddressFormOpen(false);setAddressDraft(emptyAddressDraft);}}>Cancel</button></div>
+                <div className="commerce-form-grid">
+                  <label>Full name<input required maxLength={80} autoComplete="name" value={addressDraft.full_name} onChange={event=>setAddressDraft(current=>({...current,full_name:event.target.value}))} placeholder="Name of recipient"/></label>
+                  <label>Mobile number<input required type="tel" inputMode="numeric" maxLength={10} autoComplete="tel-national" value={addressDraft.phone} onChange={event=>setAddressDraft(current=>({...current,phone:event.target.value.replace(/\D/g,"").slice(0,10)}))} placeholder="10-digit mobile number"/></label>
+                  <label>PIN code<input required inputMode="numeric" maxLength={6} autoComplete="postal-code" value={addressDraft.pincode} onChange={event=>setAddressDraft(current=>({...current,pincode:event.target.value.replace(/\D/g,"").slice(0,6)}))} placeholder="6-digit PIN code"/></label>
+                  <label>Flat, house no. or building<input required maxLength={160} autoComplete="address-line1" value={addressDraft.address_line1} onChange={event=>setAddressDraft(current=>({...current,address_line1:event.target.value}))} placeholder="House / flat / building"/></label>
+                  <label>Area, street or village<input required maxLength={160} autoComplete="address-line2" value={addressDraft.address_line2} onChange={event=>setAddressDraft(current=>({...current,address_line2:event.target.value}))} placeholder="Street, area or village"/></label>
+                  <label>Landmark (optional)<input maxLength={120} value={addressDraft.landmark} onChange={event=>setAddressDraft(current=>({...current,landmark:event.target.value}))} placeholder="Nearby landmark"/></label>
+                  <label>Town / city<input required maxLength={80} autoComplete="address-level2" value={addressDraft.city} onChange={event=>setAddressDraft(current=>({...current,city:event.target.value}))} placeholder="City or town"/></label>
+                  <label>State<input required maxLength={80} autoComplete="address-level1" value={addressDraft.state} onChange={event=>setAddressDraft(current=>({...current,state:event.target.value}))} placeholder="State"/></label>
+                  <label>Address type<select value={addressDraft.address_type} onChange={event=>setAddressDraft(current=>({...current,address_type:event.target.value as AddressDraft["address_type"]}))}><option value="Home">Home</option><option value="Work">Work</option><option value="Other">Other</option></select></label>
+                </div>
+                <label className="commerce-default-toggle"><input type="checkbox" checked={addressDraft.is_default} onChange={event=>setAddressDraft(current=>({...current,is_default:event.target.checked}))}/> Save as my default address</label>
+                <button className="btn primary full" type="submit" disabled={commerceSaving}>{commerceSaving?"Saving address…":"Save address"}</button>
+              </form>}
+            </div>
+            <aside className="cart-page-summary">
+              <h2>Checkout Summary</h2>
+              <div className="cart-summary-row"><span>Selected products</span><b>{checkoutItems.length}</b></div>
+              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(checkoutSubtotal)}</strong></div>
+              <p className="commerce-note">Shipping and final availability are confirmed before the order is accepted.</p>
+              <button className="btn primary full cart-page-checkout" type="button" disabled={!chosenAddress || checkoutItems.length===0 || commerceSaving} onClick={()=>setCheckoutStep("review")}>Continue to review →</button>
+            </aside>
+          </div>
+        </>}
+        {checkoutStep==="review" && <>
+          <div className="cart-page-heading">
+            <span className="eyebrow">CHECKOUT · STEP 2 OF 2</span>
+            <h1>Review your order</h1>
+            <p>Confirm your products and delivery address before submitting.</p>
+          </div>
+          <div className="cart-checkout-layout">
+            <div className="cart-checkout-main">
+              {chosenAddress && <div className="commerce-review-address">
+                <b>Deliver to</b>
+                <strong>{chosenAddress.full_name} · +91 {chosenAddress.phone}</strong>
+                <span>{chosenAddress.address_line1}, {chosenAddress.address_line2}{chosenAddress.landmark?", "+chosenAddress.landmark:""}, {chosenAddress.city}, {chosenAddress.state} - {chosenAddress.pincode}</span>
+                <button type="button" className="commerce-back" onClick={()=>setCheckoutStep("address")}>Change delivery address</button>
+              </div>}
+              <div className="commerce-review-items">
+                {checkoutItems.map(item=><div className="commerce-review-item" key={item.id}>
+                  <span>{item.title}</span><strong>{money(Number(item.price))}</strong>
+                </div>)}
+              </div>
+            </div>
+            <aside className="cart-page-summary">
+              <h2>Order Summary</h2>
+              <div className="cart-summary-row"><span>Products ({checkoutItems.length})</span><b>{money(checkoutSubtotal)}</b></div>
+              <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
+              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(checkoutSubtotal)}</strong></div>
+              <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. Availability, delivery charges and payment will be confirmed with you. No online payment is collected on this website.</p>
+              <button className="btn primary full cart-page-checkout" type="button" disabled={commerceSaving || !chosenAddress || checkoutItems.length===0} onClick={()=>void placeOrderRequest()}>{commerceSaving?"Submitting order request…":"Place order request"}</button>
+            </aside>
+          </div>
+        </>}
+        {checkoutStep==="success" && <div className="commerce-success cart-page-success">
+          <span className="commerce-success-mark" aria-hidden="true">✓</span>
+          <span className="eyebrow commerce-eyebrow">REQUEST SUBMITTED</span>
+          <h1>Thank you for your order request!</h1>
+          <p>Your order request is saved as pending confirmation. Product availability, delivery charges and payment arrangements must be confirmed before the sale is finalised.</p>
+          {completedOrderId && <div className="commerce-order-reference">Order request ID <b>{completedOrderId}</b></div>}
+          <p className="commerce-note">No online payment has been taken. For quickest follow-up, send this request reference to our team on WhatsApp.</p>
+          <a className="btn primary commerce-whatsapp-followup" href={"https://wa.me/919916140898?text="+encodeURIComponent("Hello VPN Products and Services, please confirm my order request "+completedOrderId+".")} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp</a>
+          <button className="btn light" type="button" onClick={closeCartPanel}>Continue shopping</button>
+        </div>}
+      </section> : selectedProduct ? <section className="product-detail-page">
         <button className="detail-back" onClick={backToProducts}>← Back to products</button>
         <div className="detail-breadcrumb">Home <span>›</span> {selectedProduct.category} <span>›</span> {selectedProduct.title}</div>
         <div className="product-detail-grid">
