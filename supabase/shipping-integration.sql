@@ -71,6 +71,7 @@ begin
 end $$;
 
 drop function if exists public.create_marketplace_order(uuid, jsonb);
+drop function if exists public.create_marketplace_order(uuid, jsonb, uuid, integer);
 
 create function public.create_marketplace_order(
   p_address_id uuid,
