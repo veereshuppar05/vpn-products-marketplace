@@ -28,7 +28,7 @@ begin
     select 1
     from public.listings
     where seller_id = v_admin_id
-      and title = 'DEMO ONLY - Smart LED Desk Lamp'
+      and title = 'VPN Demo Product - Smart LED Desk Lamp'
   ) then
     raise notice 'The demo product already exists; no duplicate was added.';
     return;
@@ -56,8 +56,8 @@ begin
   ) values (
     v_admin_id,
     'DEMO ONLY - Smart LED Desk Lamp',
-    'DEMO LISTING: This sample product was added to check the Recently Added Products section and newest-first sorting. It is not a confirmed item for sale. Please do not place an order for this demo listing.',
-    899.00,
+    'DEMO TEST PRODUCT: This ₹1 sample listing is for checking the Recently Added Products section and newest-first sorting, and optionally testing checkout and cancellation. It is not a real item for sale. Cancel any test order after placing it; no courier shipment will be created.',
+    1.00,
     'Home & Kitchen',
     'Good',
     'Bengaluru',
@@ -70,7 +70,7 @@ begin
     20,
     15,
     12,
-    false,
+    true,
     now()
   );
 end $$;
