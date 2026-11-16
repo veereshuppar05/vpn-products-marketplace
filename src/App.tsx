@@ -1288,7 +1288,7 @@ export default function App() {
         {checkoutStep==="cart" && <>
           <div className="cart-page-heading">
             <span className="eyebrow">YOUR SHOPPING BAG</span>
-            <h1>Shopping Cart</h1>
+            <h1 className="shopping-cart-title">Shopping Cart</h1>
             <p>{cartItems.length} {cartItems.length===1?"product":"products"} · {cartQuantityCount} {cartQuantityCount===1?"item":"items"} in your cart</p>
           </div>
           {!user ? <div className="cart-page-empty">
