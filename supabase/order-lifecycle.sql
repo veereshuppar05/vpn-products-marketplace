@@ -73,6 +73,10 @@ begin
     raise exception 'Test orders cannot be returned or shipped';
   end if;
 
+  if coalesce(v_order.payment_method, 'prepaid') <> 'prepaid' or coalesce(v_order.payment_status, 'pending') <> 'paid' then
+    raise exception 'A return can be requested only for an order whose prepaid payment has been received and verified';
+  end if;
+
   if v_order.status <> 'delivered' and lower(coalesce(v_order.shipping_status, '')) <> 'delivered' then
     raise exception 'A return can be requested only after delivery is confirmed';
   end if;
