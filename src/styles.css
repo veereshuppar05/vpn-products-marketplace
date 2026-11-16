@@ -4459,3 +4459,30 @@ footer a:hover { color: var(--orange-dark); }
 @media (max-width: 560px) {
   .contact-section .section-title h2 { font-size: 20px !important; }
 }
+
+
+/* Password recovery links and screens in the authentication modal. */
+.modal .auth-forgot-link {
+  display: block;
+  width: 100%;
+  margin: 9px 0 0;
+  padding: 2px 0;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 650;
+}
+.modal .auth-back-link {
+  display: block;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 3px 0;
+  text-align: center;
+  font-size: 13px;
+}
+.modal .auth-hint {
+  line-height: 1.5;
+}
+.modal button:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
