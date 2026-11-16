@@ -12,6 +12,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Signed-in customer cart with add/remove and saved cart contents
 - Saved delivery addresses with default address selection
 - Checkout with address selection, order review and order-request confirmation
+- Demo/sample listings can also submit order requests, flagged for manual seller verification
 - Order requests stored for seller confirmation
 - Public product image storage with seller-scoped upload policies
 - Demo products are shown when Supabase variables are not configured
@@ -21,7 +22,8 @@ Online payments, escrow, in-app chat, OTP login, identity verification, and a fu
 ## Supabase setup
 1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
 2. Run `supabase/commerce.sql` in Supabase SQL Editor to create the cart, customer address and order-request tables and checkout function.
-3. Run `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals and the demo low-stock quantity limit.
+3. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
+4. Set these environment variables in Cloudflare Pages:
 4. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
