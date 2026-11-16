@@ -33,7 +33,8 @@ type MarketplaceReturnRequest = {
 type MarketplaceOrder = {
   id: string; buyer_id: string; delivery_address: any; subtotal: number; delivery_fee: number;
   status: string; created_at: string; payment_status: string; payment_method: string;
-  shipping_status: string; shipping_awb?: string | null; shipping_courier_name?: string | null;
+  shipping_status: string; shiprocket_order_id?: number | null; shiprocket_shipment_id?: number | null;
+  shipping_awb?: string | null; shipping_courier_name?: string | null;
   shipping_eta?: string | null; shipping_tracking_url?: string | null; tracking_payload?: any;
   tracking_updated_at?: string | null; is_test_order?: boolean; cancellation_reason?: string | null;
   items: MarketplaceOrderItem[]; returnRequest?: MarketplaceReturnRequest | null;
@@ -1560,7 +1561,7 @@ export default function App() {
                 <div className="my-order-actions"><button className="btn primary" type="submit" disabled={returnBusy}>{returnBusy?"Submitting…":"Submit return request"}</button><button className="btn light" type="button" onClick={()=>setReturnOrderId("")}>Close</button></div>
               </form>}
               {returnRequest && <div className="my-order-return">
-                <b>Return request: {returnRequest.status.replaceAll("_"," ")}</b>
+                <b>Return request: {returnRequest.status.replace(/_/g," ")}</b>
                 <span>Reason: {returnRequest.reason}</span>
                 {returnRequest.admin_note && <small>{returnRequest.admin_note}</small>}
                 {returnRequest.return_awb && <span>Reverse pickup AWB: {returnRequest.return_awb}</span>}
