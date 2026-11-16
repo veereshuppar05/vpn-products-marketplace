@@ -403,7 +403,7 @@ Deno.serve(async (request: Request) => {
       const currentStatus = String(order.shipping_status || "").toLowerCase();
       const orderStatus = String(order.status || "").toLowerCase();
       if (orderStatus === "cancelled") return respond({ ok: true, alreadyCancelled: true, orderId });
-      if (orderStatus === "delivered" || /shipped|in transit|out for delivery|delivered|picked up/.test(currentStatus)) {
+      if (orderStatus === "delivered" || /shipped|in transit|out for pickup|out_for_pickup|out for delivery|handover to courier|delivered|picked up/.test(currentStatus)) {
         return respond({ error: "This order has already been dispatched or delivered. It cannot be cancelled; request a return after delivery instead." }, 409);
       }
       // If a Shiprocket order exists, cancel it at Shiprocket first. Never mark the
