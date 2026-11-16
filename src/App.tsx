@@ -1478,10 +1478,11 @@ export default function App() {
           <span className="commerce-success-mark" aria-hidden="true">✓</span>
           <span className="eyebrow commerce-eyebrow">REQUEST SUBMITTED</span>
           <h2 id="commerce-title">Thank you for your order request!</h2>
-          <p>Your request has been saved. The seller or VPN Products and Services team will confirm product availability, delivery and payment arrangements with you.</p>
+          <p>Your order request is saved as pending confirmation. Product availability, delivery charges and payment arrangements must be confirmed before the sale is finalised.</p>
           {completedOrderId && <div className="commerce-order-reference">Order request ID <b>{completedOrderId}</b></div>}
-          <p className="commerce-note">No online payment has been taken. Your request is pending confirmation.</p>
-          <button className="btn primary full" type="button" onClick={closeCartPanel}>Continue shopping</button>
+          <p className="commerce-note">No online payment has been taken. For quickest follow-up, send this request reference to our team on WhatsApp.</p>
+          <a className="btn primary full commerce-whatsapp-followup" href={"https://wa.me/919916140898?text="+encodeURIComponent("Hello VPN Products and Services, please confirm my order request "+completedOrderId+".")} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp</a>
+          <button className="btn light full" type="button" onClick={closeCartPanel}>Continue shopping</button>
         </div>}
       </section>
     </div>}
