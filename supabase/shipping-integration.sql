@@ -54,6 +54,11 @@ create policy "customers read own shipping quotes" on public.shipping_quotes
 grant select on public.shipping_quotes to authenticated;
 revoke insert, update, delete on public.shipping_quotes from anon, authenticated;
 
+-- The Shiprocket Edge Function writes quote rows with the server-only service role.
+-- Keep write access unavailable to browser roles while allowing server-side inserts.
+grant usage on schema public to service_role;
+grant select, insert on public.shipping_quotes to service_role;
+
 do $$
 begin
   if not exists (
