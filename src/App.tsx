@@ -645,7 +645,7 @@ export default function App() {
     event.preventDefault();
     if (!db || !user) { setNotice("Please sign in to update account details."); return; }
     const nextEmail = profileEmailDraft.trim();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)) { setNotice("Enter a valid email address."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) { setNotice("Enter a valid email address."); return; }
     if (nextEmail.toLowerCase() === (user.email || "").toLowerCase()) { setNotice("That is already your registered email address."); return; }
     setProfileSaving(true);
     const {error} = await db.auth.updateUser({email:nextEmail});
@@ -657,7 +657,7 @@ export default function App() {
     event.preventDefault();
     if (!db || !user) { setNotice("Please sign in to update account details."); return; }
     const raw = profilePhoneDraft.trim();
-    const digits = raw.replace(/\\D/g,"");
+    const digits = raw.replace(/\D/g,"");
     const nextPhone = raw.startsWith("+") ? "+" + digits
       : digits.length === 10 ? "+91" + digits
       : digits.length === 11 && digits.startsWith("0") ? "+91" + digits.slice(1)
@@ -1097,7 +1097,7 @@ export default function App() {
           <form onSubmit={pendingPhoneChange ? verifyAccountPhoneChange : updateAccountPhone}>
             <label>{pendingPhoneChange ? "Verification code sent to " + pendingPhoneChange : "Registered Phone Number"}
               {pendingPhoneChange
-                ? <input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={phoneChangeCode} onChange={e=>setPhoneChangeCode(e.target.value.replace(/\\D/g,"").slice(0,6))} placeholder="Enter SMS verification code"/>
+                ? <input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={phoneChangeCode} onChange={e=>setPhoneChangeCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="Enter SMS verification code"/>
                 : <input type="tel" autoComplete="tel" value={profilePhoneDraft} onChange={e=>setProfilePhoneDraft(e.target.value)} placeholder="10-digit mobile number"/>}
             </label>
             <button className="btn primary full" disabled={profileSaving}>{profileSaving ? "Please wait…" : pendingPhoneChange ? "Verify New Phone Number" : "Update Phone Number"}</button>
