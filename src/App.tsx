@@ -23,18 +23,38 @@ const emptyAddressDraft:AddressDraft = {
   landmark:"",city:"",state:"Karnataka",address_type:"Home",is_default:false
 };
 const isPreviewProduct = (item:Listing) => item.id.startsWith("demo-") || item.id.startsWith("sample-");
-const DEMO_PREVIEW_STOCK = 2;
+// Temporary sample stock is set per demo product. Replace these values with the
+// actual inventory numbers when they are provided by the business.
+const DEMO_PREVIEW_STOCK_BY_ID:Record<string,number> = {
+  "demo-1":3,
+  "demo-2":5,
+  "demo-3":4,
+  "sample-google-pixel-7a":3,
+  "sample-lenovo-ideapad-3":4,
+  "sample-logitech-keyboard-mouse":6,
+  "sample-jbl-bluetooth-speaker":5,
+  "sample-car-led-headlight":8,
+  "sample-kitchen-mixer-grinder":7,
+  "sample-study-desk":3,
+  "sample-canon-eos-camera":4,
+  "sample-travel-backpack":9,
+  "sample-cricket-kit":5
+};
 const MAX_CART_QUANTITY = 99;
 const getCartQuantity = (item:Listing) => Math.max(1,Math.min(MAX_CART_QUANTITY,Number(item.quantity)||1));
+const getStockForDisplay = (item:Listing) => {
+  const suppliedStock = Number(item.stock);
+  if (Number.isInteger(suppliedStock) && suppliedStock>=0) return suppliedStock;
+  if (isPreviewProduct(item)) return DEMO_PREVIEW_STOCK_BY_ID[item.id] ?? 5;
+  return null;
+};
 const getCartStockLimit = (item:Listing) => {
-  if (isPreviewProduct(item)) return DEMO_PREVIEW_STOCK;
-  const stock = Number(item.stock);
-  return Number.isInteger(stock) && stock>=0 ? Math.min(stock,MAX_CART_QUANTITY) : MAX_CART_QUANTITY;
+  const stock = getStockForDisplay(item);
+  return stock===null ? MAX_CART_QUANTITY : Math.min(stock,MAX_CART_QUANTITY);
 };
 const getStockMessage = (item:Listing) => {
-  if (isPreviewProduct(item)) return "Only 2 left";
-  const stock = Number(item.stock);
-  if (!Number.isInteger(stock)) return "";
+  const stock = getStockForDisplay(item);
+  if (stock===null) return "";
   if (stock===0) return "Out of stock";
   return stock>0 && stock<10 ? "Only "+stock+" left" : "";
 };
@@ -874,7 +894,7 @@ export default function App() {
     const snapshot = {
       id:item.id,title:item.title,description:item.description,price:Number(item.price),
       category:item.category,condition:item.condition,city:item.city,state:item.state,
-      seller_name:item.seller_name,image_urls:item.image_urls || []
+      seller_name:item.seller_name,image_urls:item.image_urls || [],stock:item.stock
     };
     const {error} = await db.from("cart_items").upsert({
       user_id:user.id,item_key:item.id,item_snapshot:snapshot,quantity:1
