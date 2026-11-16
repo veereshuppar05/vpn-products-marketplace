@@ -6894,3 +6894,180 @@ footer a:hover { color: var(--orange-dark); }
 @media (max-width: 380px) {
   .feature-page-card-grid { grid-template-columns: 1fr !important; }
 }
+
+
+/* Comfortable full-size feature pages: preserve vertical document flow and place footer after page content. */
+.feature-detail-page.section {
+  padding: 14px clamp(20px, 4vw, 54px) 42px !important;
+}
+.feature-page-back {
+  margin: 0 0 11px !important;
+  font-size: 13px !important;
+}
+.feature-page-hero {
+  min-height: 250px !important;
+  padding: 30px clamp(26px, 3.6vw, 44px) !important;
+  gap: 28px !important;
+  border-radius: 19px !important;
+}
+.feature-page-hero-copy {
+  max-width: 760px !important;
+}
+.feature-page-hero-copy h1 {
+  max-width: 720px !important;
+  font-size: 28px !important;
+  line-height: 1.2 !important;
+  margin: 8px 0 11px !important;
+}
+.feature-page-hero-copy p {
+  max-width: 700px !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+.feature-page-hero-copy .eyebrow,
+.feature-page-section-heading .eyebrow,
+.feature-page-bottom-cta .eyebrow {
+  font-size: 11px !important;
+  letter-spacing: 1.35px !important;
+}
+.feature-page-actions {
+  gap: 11px !important;
+  margin-top: 19px !important;
+}
+.feature-page-actions .btn {
+  height: 46px !important;
+  min-height: 46px !important;
+  padding: 0 18px !important;
+  font-size: 13px !important;
+  border-radius: 11px !important;
+}
+.feature-page-hero-art {
+  min-height: 205px !important;
+}
+.feature-page-art-card {
+  width: 150px !important;
+  height: 150px !important;
+  border-radius: 34px !important;
+}
+.feature-page-art-card svg {
+  width: 106px !important;
+  height: 106px !important;
+}
+.feature-art-orbit { width: 194px !important; height: 194px !important; }
+.feature-art-orbit-two { width: 232px !important; height: 232px !important; }
+
+.feature-page-offerings {
+  margin-top: 29px !important;
+}
+.feature-page-section-heading {
+  margin-bottom: 16px !important;
+}
+.feature-page-section-heading h2 {
+  font-size: 22px !important;
+  line-height: 1.25 !important;
+  margin: 5px 0 7px !important;
+}
+.feature-page-section-heading p {
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+.feature-page-card-grid {
+  gap: 14px !important;
+}
+.feature-page-info-card {
+  min-height: 166px !important;
+  padding: 18px !important;
+  border-radius: 15px !important;
+}
+.feature-page-card-number {
+  width: 32px !important;
+  height: 28px !important;
+  font-size: 10px !important;
+  border-radius: 9px !important;
+}
+.feature-page-info-card h3 {
+  font-size: 15px !important;
+  line-height: 1.32 !important;
+  margin: 11px 0 7px !important;
+}
+.feature-page-info-card p {
+  font-size: 12.5px !important;
+  line-height: 1.58 !important;
+}
+.feature-page-bottom-cta {
+  margin-top: 21px !important;
+  padding: 19px 22px !important;
+  gap: 20px !important;
+  border-radius: 15px !important;
+}
+.feature-page-bottom-cta h2 {
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  margin: 4px 0 5px !important;
+}
+.feature-page-bottom-cta p {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+.feature-page-bottom-cta .feature-page-actions {
+  gap: 12px !important;
+}
+.feature-page-call-link { font-size: 12px !important; }
+
+/* Let the content determine page height; the footer follows it in normal document flow. */
+.feature-detail-page,
+.feature-detail-page.section,
+.feature-page-hero,
+.feature-page-offerings,
+.feature-page-bottom-cta {
+  flex-shrink: 0;
+}
+@media (max-width: 1000px) {
+  .feature-detail-page.section { padding: 12px 22px 34px !important; }
+  .feature-page-hero { min-height: 225px !important; padding: 25px !important; }
+  .feature-page-hero-copy h1 { font-size: 26px !important; }
+  .feature-page-hero-copy p { font-size: 14px !important; }
+  .feature-page-hero-art { min-height: 175px !important; }
+  .feature-page-art-card { width: 126px !important; height: 126px !important; }
+  .feature-page-art-card svg { width: 90px !important; height: 90px !important; }
+  .feature-art-orbit { width: 164px !important; height: 164px !important; }
+  .feature-art-orbit-two { width: 198px !important; height: 198px !important; }
+  .feature-page-card-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .feature-page-info-card { min-height: 150px !important; }
+}
+@media (max-width: 680px) {
+  .feature-detail-page.section { padding: 10px 14px 28px !important; }
+  .feature-page-hero {
+    grid-template-columns: minmax(0,1fr) !important;
+    min-height: 0 !important;
+    gap: 10px !important;
+    padding: 21px 17px 15px !important;
+    border-radius: 16px !important;
+  }
+  .feature-page-hero-copy h1 { font-size: 24px !important; line-height: 1.22 !important; }
+  .feature-page-hero-copy p { font-size: 13px !important; }
+  .feature-page-actions { margin-top: 14px !important; }
+  .feature-page-actions .btn { height: 42px !important; min-height: 42px !important; font-size: 12px !important; }
+  .feature-page-hero-art { min-height: 142px !important; }
+  .feature-page-art-card { width: 102px !important; height: 102px !important; }
+  .feature-page-art-card svg { width: 73px !important; height: 73px !important; }
+  .feature-art-orbit { width: 136px !important; height: 136px !important; }
+  .feature-art-orbit-two { width: 162px !important; height: 162px !important; }
+  .feature-page-offerings { margin-top: 22px !important; }
+  .feature-page-section-heading h2 { font-size: 19px !important; }
+  .feature-page-section-heading p { font-size: 12px !important; }
+  .feature-page-card-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 10px !important; }
+  .feature-page-info-card { min-height: 136px !important; padding: 13px !important; }
+  .feature-page-info-card h3 { font-size: 13px !important; }
+  .feature-page-info-card p { font-size: 11px !important; }
+  .feature-page-bottom-cta {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    margin-top: 16px !important;
+    padding: 16px !important;
+  }
+  .feature-page-bottom-cta .feature-page-actions { width: 100%; flex-wrap: wrap; }
+}
+@media (max-width: 380px) {
+  .feature-page-card-grid { grid-template-columns: 1fr !important; }
+}
