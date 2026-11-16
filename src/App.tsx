@@ -121,6 +121,13 @@ const categoryIconByName:Record<string,string> = {
 };
 const allCategoryTiles = categories.map(name=>({name,icon:categoryIconByName[name] ?? "📦"}));
 const isAllCategoriesPath = () => /^\/categories\/?$/.test(window.location.pathname);
+const featurePageSlugs = ["computer-services","mobile-services","buy-sell","website-development","multi-brand-products"] as const;
+type FeaturePageSlug = typeof featurePageSlugs[number];
+const featurePageFromPath = (): FeaturePageSlug | null => {
+  const path = window.location.pathname.replace(/\/+$/,"").replace(/^\//,"");
+  return (featurePageSlugs as readonly string[]).includes(path) ? path as FeaturePageSlug : null;
+};
+
 const categorySlug = (name:string) => name.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const categoryFromPath = () => {
   const match = window.location.pathname.match(/^\/category\/([^/]+)(?:\/[^/]+)?\/?$/);
@@ -275,6 +282,119 @@ const serviceEnquirySlugFromLocation = () => {
 };
 
 
+const featurePages = [
+  {
+    slug:"computer-services", title:"Computer Services", eyebrow:"COMPUTER SHOP & SUPPORT",
+    headline:"Computer help for work, study and everyday use.",
+    intro:"Explore computers, laptops and accessories, and get help with setup, troubleshooting, upgrades and service support.",
+    icon:"computer", primaryLabel:"Enquire about computer services", primaryAction:"enquire", enquirySlug:"computer-shop-services",
+    secondaryLabel:"Browse computers & laptops", secondaryAction:"category", category:"Computers & Laptops",
+    cards:[
+      {title:"Computers & laptops",text:"Browse available computers and laptops listed in the marketplace."},
+      {title:"Setup & configuration",text:"Ask for help getting a computer or laptop set up for your everyday needs."},
+      {title:"Troubleshooting & upgrades",text:"Discuss common device issues, upgrades and service support."},
+      {title:"Accessories",text:"Ask about accessories and add-ons for your computer setup."}
+    ]
+  },
+  {
+    slug:"mobile-services", title:"Mobile Services", eyebrow:"PHONE & TABLET SUPPORT",
+    headline:"Make more of the phones and tablets you use every day.",
+    intro:"Explore mobile devices and ask for practical setup and support for everyday phone and tablet needs.",
+    icon:"mobile", primaryLabel:"Enquire about mobile services", primaryAction:"enquire", enquirySlug:"mobile-services",
+    secondaryLabel:"Browse mobiles & tablets", secondaryAction:"category", category:"Mobiles & Tablets",
+    cards:[
+      {title:"Phones & tablets",text:"Explore the mobile devices currently listed in the marketplace."},
+      {title:"Device setup",text:"Get assistance with setting up a phone or tablet for everyday use."},
+      {title:"Everyday support",text:"Ask about help with device settings, common issues and mobile usage."},
+      {title:"Accessories",text:"Enquire about suitable accessories for your mobile device."}
+    ]
+  },
+  {
+    slug:"buy-sell", title:"Buy & Sell", eyebrow:"NEW & SECOND-HAND MARKETPLACE",
+    headline:"Find useful products. Give pre-owned items a new home.",
+    intro:"Browse new and second-hand products across the marketplace, or sign in to list an item for sale.",
+    icon:"marketplace", primaryLabel:"Explore all products", primaryAction:"products",
+    secondaryLabel:"Sell an item", secondaryAction:"sell",
+    cards:[
+      {title:"Browse by category",text:"Discover phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and more."},
+      {title:"New and second-hand",text:"Explore listings in different conditions and review each product description and photos."},
+      {title:"List your item",text:"Sign in to create a listing, add photos and share product details with buyers."},
+      {title:"Buy thoughtfully",text:"Review the listing carefully, ask questions and inspect items where possible before paying."}
+    ]
+  },
+  {
+    slug:"website-development", title:"Website Development", eyebrow:"WEBSITES FOR BUSINESSES & PROFESSIONALS",
+    headline:"Build a clear online presence for your business.",
+    intro:"We create websites for shops, businesses, professionals and service providers—from simple business pages to online stores.",
+    icon:"website", primaryLabel:"Discuss your website project", primaryAction:"enquire", enquirySlug:"website-development",
+    secondaryLabel:"Explore the marketplace", secondaryAction:"products",
+    cards:[
+      {title:"Business websites",text:"Give customers a clear place to learn about your business, services and contact details."},
+      {title:"Shop and service pages",text:"Present products, services, business information and enquiry options in one place."},
+      {title:"Online stores",text:"Discuss a website that can display products and support an online shopping experience."},
+      {title:"Planned around your needs",text:"Share your goals and preferred features so the project can be discussed before work begins."}
+    ]
+  },
+  {
+    slug:"multi-brand-products", title:"Multi-Brand Products", eyebrow:"EXPLORE PRODUCTS ACROSS CATEGORIES",
+    headline:"Explore products from different brands in one marketplace.",
+    intro:"Discover available listings across phones, computers, electronics, home and lifestyle products, vehicle parts and more.",
+    icon:"brands", primaryLabel:"Browse all products", primaryAction:"products",
+    secondaryLabel:"View all categories", secondaryAction:"categories",
+    cards:[
+      {title:"Many product categories",text:"Explore different types of products from the marketplace category directory."},
+      {title:"Different brands",text:"Review the brand and model details provided in each individual product listing."},
+      {title:"New and pre-owned listings",text:"Availability and condition vary by listing, so check each product page for current details."},
+      {title:"Product details matter",text:"Compare the information, photos, condition, price and location shown on each listing."}
+    ]
+  }
+] as const;
+
+function FeatureGlyph({kind}:{kind:string}) {
+  if (kind==="computer") return <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <rect x="7" y="9" width="50" height="36" rx="7" fill="#dceaff"/>
+    <rect x="13" y="14" width="38" height="27" rx="4" fill="#1769e0"/>
+    <rect x="16" y="17" width="32" height="21" rx="2" fill="#f8fbff"/>
+    <path d="M24 22h16M24 27h10M24 32h15" stroke="#62a3ff" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M29 42v6m6-6v6M23 49h18" stroke="#174a91" strokeWidth="3" strokeLinecap="round"/>
+    <circle cx="44" cy="22" r="3" fill="#f47721"/>
+  </svg>;
+  if (kind==="mobile") return <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <rect x="18" y="5" width="28" height="54" rx="8" fill="#dceaff"/>
+    <rect x="21" y="8" width="22" height="47" rx="5" fill="#1769e0"/>
+    <rect x="24" y="13" width="16" height="34" rx="2" fill="#f8fbff"/>
+    <path d="M28 19h8m-8 5h8m-8 5h5" stroke="#7bb4ff" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="32" cy="51" r="2" fill="#fff"/>
+    <circle cx="46" cy="15" r="6" fill="#f47721"/>
+    <path d="m44 15 1.5 1.5L48 13" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>;
+  if (kind==="marketplace") return <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <path d="M13 24h38l-4 29H17z" fill="#dceaff" stroke="#1769e0" strokeWidth="2.5" strokeLinejoin="round"/>
+    <path d="M22 25v-6a10 10 0 0 1 20 0v6" fill="none" stroke="#174a91" strokeWidth="3" strokeLinecap="round"/>
+    <path d="M23 34h18M25 40h14" stroke="#7aaff4" strokeWidth="3" strokeLinecap="round"/>
+    <circle cx="47" cy="14" r="8" fill="#f47721"/>
+    <path d="M43 14h8m-3-3 3 3-3 3" stroke="#fff" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>;
+  if (kind==="website") return <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <rect x="6" y="10" width="52" height="43" rx="7" fill="#dceaff"/>
+    <rect x="11" y="15" width="42" height="33" rx="4" fill="#fff" stroke="#1769e0" strokeWidth="2.5"/>
+    <path d="M11 24h42" stroke="#1769e0" strokeWidth="2.5"/>
+    <circle cx="17" cy="20" r="1.5" fill="#f47721"/><circle cx="22" cy="20" r="1.5" fill="#7bb4ff"/><circle cx="27" cy="20" r="1.5" fill="#7bb4ff"/>
+    <path d="m22 32-5 4 5 4m20-8 5 4-5 4m-7-10-4 12" stroke="#1769e0" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    <rect x="24" y="42" width="16" height="3" rx="1.5" fill="#f47721"/>
+  </svg>;
+  return <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <rect x="7" y="17" width="23" height="31" rx="5" fill="#dceaff" stroke="#1769e0" strokeWidth="2"/>
+    <rect x="34" y="9" width="23" height="31" rx="5" fill="#fff0df" stroke="#f47721" strokeWidth="2"/>
+    <rect x="22" y="31" width="23" height="25" rx="5" fill="#edf5ff" stroke="#174a91" strokeWidth="2"/>
+    <path d="M13 25h11m-11 6h8m19-14h11m-11 6h8m-22 14h11m-11 6h8" stroke="#7baef1" strokeWidth="2" strokeLinecap="round"/>
+    <circle cx="52" cy="48" r="8" fill="#1769e0"/>
+    <path d="m48.5 48 2.2 2.2 4.3-4.4" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>;
+}
+
+
+
 export default function App() {
   const [items,setItems] = useState<Listing[]>([...demo,...featuredListings,...sampleListings]);
   const [user,setUser] = useState<any>(null);
@@ -297,6 +417,7 @@ export default function App() {
   const [cartItems,setCartItems] = useState<Listing[]>([]);
   const [showCartPage,setShowCartPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/cart");
   const [showOrdersPage,setShowOrdersPage] = useState(false);
+  const [selectedFeaturePage,setSelectedFeaturePage] = useState<FeaturePageSlug|null>(()=>featurePageFromPath());
   const [showServiceEnquiryPage,setShowServiceEnquiryPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/enquire");
   const [enquiryService,setEnquiryService] = useState<string>(()=>serviceEnquirySlugFromLocation() || serviceEnquiryOptions[0].slug);
   const [enquiryForm,setEnquiryForm] = useState({fullName:"",phone:"",email:"",details:"",preferredContact:"whatsapp" as "whatsapp"|"phone"|"email"});
@@ -562,6 +683,7 @@ export default function App() {
       const categoryPage = categoryFromPath();
       const currentPath = window.location.pathname.replace(/\/+$/,"");
       const cartPage = currentPath==="/cart";
+      setSelectedFeaturePage(featurePageFromPath());
       setShowServiceEnquiryPage(currentPath==="/enquire");
       setEnquiryService(serviceEnquirySlugFromLocation() || serviceEnquiryOptions[0].slug);
       setShowServiceEnquiriesPage(currentPath==="/admin/service-enquiries");
@@ -602,7 +724,40 @@ export default function App() {
   }, [photoViewerOpen,selectedProduct]);
 
 
+  const openFeaturePage = (slug:FeaturePageSlug) => {
+    const page = featurePages.find(item=>item.slug===slug);
+    if (!page) return;
+    window.history.pushState({fromFeaturePage:true},"","/"+slug);
+    setSelectedFeaturePage(slug);
+    setShowServiceEnquiryPage(false);
+    setShowServiceEnquiriesPage(false);
+    setShowCartPage(false);
+    setShowOrdersPage(false);
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
+    setProfileMenuOpen(false);
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const backFromFeaturePage = () => {
+    if (window.history.state?.fromFeaturePage) window.history.back();
+    else {
+      window.history.replaceState({},"","/");
+      setSelectedFeaturePage(null);
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+  };
+  const runFeatureAction = (action:string,page:typeof featurePages[number]) => {
+    if (action==="enquire" && "enquirySlug" in page) openServiceEnquiry(page.enquirySlug);
+    else if (action==="category" && "category" in page) openCategory(page.category);
+    else if (action==="products") openAllProducts();
+    else if (action==="categories") openAllCategories();
+    else if (action==="sell") openSell();
+  };
+
   const openServiceEnquiry = (serviceSlug:string) => {
+    setSelectedFeaturePage(null);
     const selected = serviceEnquiryOptions.find(option=>option.slug===serviceSlug) || serviceEnquiryOptions[0];
     window.history.pushState({fromServiceEnquiry:true},"","/enquire?service="+encodeURIComponent(selected.slug));
     setShowServiceEnquiryPage(true);
@@ -728,6 +883,7 @@ export default function App() {
     window.scrollTo({top:0,behavior:"smooth"});
   };
   const openCategory = (categoryName:string) => {
+    setSelectedFeaturePage(null);
     window.history.pushState(
       {fromCategoryPage:true},
       "",
@@ -742,6 +898,7 @@ export default function App() {
     window.scrollTo({top:0,behavior:"smooth"});
   };
   const openAllCategories = () => {
+    setSelectedFeaturePage(null);
     window.history.pushState({fromAllCategories:true},"","/categories");
     setSelectedProductId(null);
     setSelectedCategoryPage(null);
@@ -763,6 +920,7 @@ export default function App() {
     }
   };
   const openAllProducts = () => {
+    setSelectedFeaturePage(null);
     window.history.pushState({fromAllProducts:true},"","/products");
     setSelectedProductId(null);
     setSelectedCategoryPage(null);
@@ -1646,6 +1804,8 @@ export default function App() {
   const recentProductCards = renderProductCards(visible.slice(0,5),true);
 
 
+  const activeFeaturePage = featurePages.find(page=>page.slug===selectedFeaturePage) || null;
+
   const displayName = user?.user_metadata?.full_name?.trim() || user?.email?.split("@")[0] || user?.phone || "User";
 
   return <div className="site">
@@ -1684,7 +1844,49 @@ export default function App() {
         </div>}
       </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
-      {showServiceEnquiriesPage && user && isAdmin ? <section className="service-enquiries-admin-page section">
+      {activeFeaturePage ? <section className="feature-detail-page section">
+        <button type="button" className="feature-page-back" onClick={backFromFeaturePage}>← Back to home</button>
+        <header className="feature-page-hero">
+          <div className="feature-page-hero-copy">
+            <span className="eyebrow">{activeFeaturePage.eyebrow}</span>
+            <h1>{activeFeaturePage.headline}</h1>
+            <p>{activeFeaturePage.intro}</p>
+            <div className="feature-page-actions">
+              <button type="button" className="btn primary" onClick={()=>runFeatureAction(activeFeaturePage.primaryAction,activeFeaturePage)}>{activeFeaturePage.primaryLabel} →</button>
+              <button type="button" className="btn light" onClick={()=>runFeatureAction(activeFeaturePage.secondaryAction,activeFeaturePage)}>{activeFeaturePage.secondaryLabel}</button>
+            </div>
+          </div>
+          <div className="feature-page-hero-art">
+            <div className="feature-page-art-glow"></div>
+            <div className="feature-page-art-card"><FeatureGlyph kind={activeFeaturePage.icon}/></div>
+            <span className="feature-art-orbit feature-art-orbit-one"></span>
+            <span className="feature-art-orbit feature-art-orbit-two"></span>
+            <span className="feature-art-dot feature-art-dot-one"></span>
+            <span className="feature-art-dot feature-art-dot-two"></span>
+          </div>
+        </header>
+        <section className="feature-page-offerings">
+          <div className="feature-page-section-heading">
+            <span className="eyebrow">WHAT YOU CAN EXPLORE</span>
+            <h2>{activeFeaturePage.title}, made straightforward</h2>
+            <p>Choose what you need and contact VPN Products and Services for the next step.</p>
+          </div>
+          <div className="feature-page-card-grid">
+            {activeFeaturePage.cards.map((card,index)=><article className="feature-page-info-card" key={card.title}>
+              <span className="feature-page-card-number">{String(index+1).padStart(2,"0")}</span>
+              <h3>{card.title}</h3>
+              <p>{card.text}</p>
+            </article>)}
+          </div>
+        </section>
+        <section className="feature-page-bottom-cta">
+          <div><span className="eyebrow">VPN PRODUCTS AND SERVICES</span><h2>Ready to get started?</h2><p>Tell us what you are looking for and we’ll help you find the right next step.</p></div>
+          <div className="feature-page-actions">
+            <button type="button" className="btn primary" onClick={()=>"enquirySlug" in activeFeaturePage ? openServiceEnquiry(activeFeaturePage.enquirySlug) : activeFeaturePage.slug==="buy-sell" ? openAllProducts() : openAllCategories()}>{ "enquirySlug" in activeFeaturePage ? "Send an enquiry" : "Explore products" } →</button>
+            <a className="feature-page-call-link" href="https://wa.me/919916140898?text=Hello%20VPN%20Products%20and%20Services%2C%20I%20would%20like%20to%20know%20more." target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
+          </div>
+        </section>
+      </section> : showServiceEnquiriesPage && user && isAdmin ? <section className="service-enquiries-admin-page section">
         <button type="button" className="cart-page-back" onClick={()=>window.history.state?.fromServiceEnquiries?window.history.back():(setShowServiceEnquiriesPage(false),window.history.replaceState({},"","/"))}>← Back</button>
         <div className="cart-page-heading"><span className="eyebrow">ADMINISTRATION</span><h1>Service Enquiries</h1><p>Review requests submitted for computer, mobile, printing, application and website services.</p></div>
         {serviceEnquiriesLoading ? <div className="cart-page-empty"><p>Loading enquiries…</p></div>
@@ -2129,13 +2331,13 @@ export default function App() {
       </section> : <>
 
       <section id="home-hero" className="hero"><div className="hero-copy"><span className="eyebrow">COMPUTER SHOP & MULTI-SERVICE CENTER</span><h1>Buy, Sell, Repair &<br/><em>Get IT Services</em></h1><p>Computer and mobile services, Xerox and printing, online application assistance, website development, and new and second-hand products — all in one place.</p><div className="hero-actions"><button className="btn primary" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>🛒 Browse Products</button><button className="btn light" onClick={()=>document.getElementById("services")?.scrollIntoView({behavior:"smooth"})}>⚒ Our Services</button></div></div><div className="hero-art"><img className="hero-illustration hero-print-illustration" src="/hero-print-services.svg" alt="Xerox printer, photocopying, document scanning and online application assistance"/><img className="hero-illustration hero-devices-illustration" src="/hero-devices.svg" alt="Computer, laptop, mobile phone, camera, headphones and electronics"/></div></section>
-      <section className="feature-strip" aria-label="Our business areas">
-        <div className="feature-item"><span>▣</span><b>Computer<br/>Services</b></div>
-        <div className="feature-item"><span>▯</span><b>Mobile<br/>Services</b></div>
-        <div className="feature-item"><span>🛒</span><b>Buy & Sell <small>(New & Second-Hand)</small></b></div>
-        <div className="feature-item"><span>⌘</span><b>Website<br/>Development</b></div>
-        <div className="feature-item"><span>▱</span><b>Multi-Brand<br/>Products</b></div>
-      </section>
+      <nav className="feature-strip" aria-label="Explore our business areas">
+        <button type="button" className="feature-item" onClick={()=>openFeaturePage("computer-services")}><span className="feature-item-icon"><FeatureGlyph kind="computer"/></span><b>Computer<br/>Services</b><span className="feature-item-arrow">↗</span></button>
+        <button type="button" className="feature-item" onClick={()=>openFeaturePage("mobile-services")}><span className="feature-item-icon"><FeatureGlyph kind="mobile"/></span><b>Mobile<br/>Services</b><span className="feature-item-arrow">↗</span></button>
+        <button type="button" className="feature-item" onClick={()=>openFeaturePage("buy-sell")}><span className="feature-item-icon"><FeatureGlyph kind="marketplace"/></span><b>Buy & Sell <small>New & Second-Hand</small></b><span className="feature-item-arrow">↗</span></button>
+        <button type="button" className="feature-item" onClick={()=>openFeaturePage("website-development")}><span className="feature-item-icon"><FeatureGlyph kind="website"/></span><b>Website<br/>Development</b><span className="feature-item-arrow">↗</span></button>
+        <button type="button" className="feature-item" onClick={()=>openFeaturePage("multi-brand-products")}><span className="feature-item-icon"><FeatureGlyph kind="brands"/></span><b>Multi-Brand<br/>Products</b><span className="feature-item-arrow">↗</span></button>
+      </nav>
       <section className="category-section section">
         <div className="section-title"><div><span className="eyebrow">EXPLORE OUR MARKETPLACE</span><h2>Shop by Category</h2></div><button className="text-link" onClick={openAllCategories}>View all categories →</button></div>
         <div className="category-grid">{categoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>openCategory(tile.name)}><span className="tile-icon">{tile.icon}</span><b>{tile.name}</b></button>)}</div>
