@@ -24,11 +24,10 @@ Online payments, escrow, in-app chat, OTP login, identity verification, and a fu
 2. Run `supabase/commerce.sql` in Supabase SQL Editor to create the cart, customer address and order-request tables and checkout function.
 3. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
 4. Set these environment variables in Cloudflare Pages:
-4. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
-3. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
-4. First account: obtain its UUID from Authentication > Users, then set `profiles.is_admin=true` for that UUID in SQL Editor. Admins can approve listings by changing `listings.status` to `active`.
+5. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
+6. First account: obtain its UUID from Authentication > Users, then set `profiles.is_admin=true` for that UUID in SQL Editor. Admins can approve listings by changing `listings.status` to `active`.
 
 ## Deploy on Cloudflare Pages
 - Connect this GitHub repository.
