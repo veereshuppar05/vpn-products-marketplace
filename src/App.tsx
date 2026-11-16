@@ -6,6 +6,22 @@ type Listing = {
   condition: string; city: string; state: string; contact_phone: string;
   seller_name: string; image_urls: string[]; status: string; created_at: string;
 };
+type CustomerAddress = {
+  id: string; full_name: string; phone: string; pincode: string;
+  address_line1: string; address_line2: string; landmark: string | null;
+  city: string; state: string; address_type: "Home" | "Work" | "Other";
+  is_default: boolean; created_at: string;
+};
+type AddressDraft = {
+  full_name: string; phone: string; pincode: string; address_line1: string;
+  address_line2: string; landmark: string; city: string; state: string;
+  address_type: "Home" | "Work" | "Other"; is_default: boolean;
+};
+const emptyAddressDraft:AddressDraft = {
+  full_name:"",phone:"",pincode:"",address_line1:"",address_line2:"",
+  landmark:"",city:"",state:"Karnataka",address_type:"Home",is_default:false
+};
+const isPreviewProduct = (item:Listing) => item.id.startsWith("demo-") || item.id.startsWith("sample-");
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
 const db: SupabaseClient | null = url && key ? createClient(url, key) : null;
@@ -200,6 +216,16 @@ export default function App() {
   const [pendingPhoneChange,setPendingPhoneChange] = useState("");
   const [phoneChangeCode,setPhoneChangeCode] = useState("");
   const [profileSaving,setProfileSaving] = useState(false);
+  const [cartItems,setCartItems] = useState<Listing[]>([]);
+  const [cartPanelOpen,setCartPanelOpen] = useState(false);
+  const [checkoutStep,setCheckoutStep] = useState<"cart"|"address"|"review"|"success">("cart");
+  const [checkoutItemIds,setCheckoutItemIds] = useState<string[]>([]);
+  const [addresses,setAddresses] = useState<CustomerAddress[]>([]);
+  const [selectedAddressId,setSelectedAddressId] = useState("");
+  const [addressFormOpen,setAddressFormOpen] = useState(false);
+  const [addressDraft,setAddressDraft] = useState<AddressDraft>(emptyAddressDraft);
+  const [commerceSaving,setCommerceSaving] = useState(false);
+  const [completedOrderId,setCompletedOrderId] = useState("");
   const profileMenuRef = useRef<HTMLDivElement|null>(null);
   const [sellOpen,setSellOpen] = useState(false);
   const [mode,setMode] = useState<"login"|"signup">("login");
@@ -235,6 +261,41 @@ export default function App() {
     if (!error && data) setItems([...(data as Listing[]), ...featuredListings, ...sampleListings]);
     if (error) setNotice("Could not load live listings: " + error.message);
   };
+  const loadCommerceData = async (sessionUser:any) => {
+    if (!db || !sessionUser) {
+      setCartItems([]);
+      setAddresses([]);
+      setSelectedAddressId("");
+      return;
+    }
+    const [cartResult,addressResult] = await Promise.all([
+      db.from("cart_items").select("item_key,item_snapshot").eq("user_id",sessionUser.id).order("created_at",{ascending:true}),
+      db.from("customer_addresses").select("*").eq("user_id",sessionUser.id).order("is_default",{ascending:false}).order("created_at",{ascending:false})
+    ]);
+    if (cartResult.error) {
+      setNotice("Cart setup needs the Supabase commerce SQL migration. " + cartResult.error.message);
+    } else {
+      setCartItems((cartResult.data || []).map((row:any)=>({...row.item_snapshot,id:row.item_key}) as Listing));
+    }
+    if (addressResult.error) {
+      setNotice("Address setup needs the Supabase commerce SQL migration. " + addressResult.error.message);
+    } else {
+      const rows = (addressResult.data || []) as CustomerAddress[];
+      setAddresses(rows);
+      setSelectedAddressId(current=>rows.some(address=>address.id===current)
+        ? current : rows.find(address=>address.is_default)?.id || rows[0]?.id || "");
+    }
+  };
+  useEffect(() => {
+    if (user?.id) {
+      void loadCommerceData(user);
+    } else {
+      setCartItems([]);
+      setAddresses([]);
+      setSelectedAddressId("");
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     if (!db) return;
     let mounted = true;
@@ -604,6 +665,11 @@ export default function App() {
     const {error} = db ? await db.auth.signOut() : {error:null};
     if (error) { setNotice(error.message); return; }
     setUser(null);
+    setCartItems([]);
+    setAddresses([]);
+    setSelectedAddressId("");
+    setCartPanelOpen(false);
+    setCheckoutItemIds([]);
     // Clear the locally held auth form values as well as the Supabase session.
     setEmail("");
     setPassword("");
