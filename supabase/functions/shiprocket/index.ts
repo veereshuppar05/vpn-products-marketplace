@@ -398,28 +398,55 @@ Deno.serve(async (request: Request) => {
       const reason = String(body.reason || "Cancelled by customer").trim().slice(0,500);
       if (!orderId) return respond({ error: "Order request ID is required." }, 400);
       const { data: order, error: orderError } = await adminDb.from("marketplace_orders").select("*").eq("id", orderId).maybeSingle();
-      if (orderError || !order) return respond({ error: "Order request was not found." }, 404);
+      if (orderError) {
+        console.error("Could not load order for cancellation:", orderError.message);
+        return respond({ error: "Could not load this order. Refresh My Orders and try again." }, 500);
+      }
+      if (!order) return respond({ error: "Order request was not found." }, 404);
       if (order.buyer_id !== user.id && !isAdmin) return respond({ error: "You are not allowed to cancel this order." }, 403);
+
       const currentStatus = String(order.shipping_status || "").toLowerCase();
       const orderStatus = String(order.status || "").toLowerCase();
-      if (orderStatus === "cancelled") return respond({ ok: true, alreadyCancelled: true, orderId });
+      if (orderStatus === "cancelled") return respond({ ok: true, alreadyCancelled: true, orderId, status: "cancelled" });
       if (orderStatus === "delivered" || /shipped|in transit|out for pickup|out_for_pickup|out for delivery|handover to courier|delivered|picked up/.test(currentStatus)) {
         return respond({ error: "This order has already been dispatched or delivered. It cannot be cancelled; request a return after delivery instead." }, 409);
       }
-      // If a Shiprocket order exists, cancel it at Shiprocket first. Never mark the
-      // website order cancelled if the carrier refuses the cancellation.
-      if (order.shiprocket_order_id) {
-        await sr("/orders/cancel", "POST", { ids: [Number(order.shiprocket_order_id)] });
+
+      // ₹1 test orders must never call Shiprocket. Real booked shipments must be
+      // cancelled with the carrier first; if Shiprocket refuses, keep the order open.
+      if (order.is_test_order !== true && order.shiprocket_order_id) {
+        try {
+          await sr("/orders/cancel", "POST", { ids: [Number(order.shiprocket_order_id)] });
+        } catch (carrierError) {
+          const message = carrierError instanceof Error ? carrierError.message : "Shiprocket cancellation failed.";
+          console.error("Shiprocket refused order cancellation:", message);
+          return respond({ error: "Shiprocket could not cancel the courier shipment: " + message }, 502);
+        }
       }
-      const { error: updateError } = await adminDb.from("marketplace_orders").update({
-        status: "cancelled",
-        shipping_status: order.shiprocket_order_id ? "cancelled" : (order.is_test_order ? "test_order_cancelled" : "cancelled"),
-        cancellation_reason: reason,
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: user.id,
-      }).eq("id", orderId);
-      if (updateError) throw new Error("The courier/order cancellation was requested, but the website order could not be updated. Contact support before retrying.");
-      return respond({ ok: true, orderId, status: "cancelled" });
+
+      const cancelledAt = new Date().toISOString();
+      const { data: updatedOrder, error: updateError } = await adminDb
+        .from("marketplace_orders")
+        .update({
+          status: "cancelled",
+          shipping_status: order.is_test_order === true ? "test_order_cancelled" : "cancelled",
+          cancellation_reason: reason,
+          cancelled_at: cancelledAt,
+          cancelled_by: user.id,
+        })
+        .eq("id", orderId)
+        .select("id,status,shipping_status")
+        .maybeSingle();
+
+      if (updateError) {
+        console.error("Order cancellation database update failed:", updateError.message);
+        return respond({
+          error: "The order could not be marked as cancelled in the database. Run supabase/fix-order-cancellation.sql in Supabase SQL Editor, then retry.",
+          detail: updateError.message,
+        }, 500);
+      }
+      if (!updatedOrder) return respond({ error: "The order was not updated. Refresh My Orders and try again." }, 404);
+      return respond({ ok: true, orderId, status: updatedOrder.status, shippingStatus: updatedOrder.shipping_status });
     }
 
     if (action === "admin-update-order") {
