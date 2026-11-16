@@ -884,7 +884,10 @@ export default function App() {
       const {error} = await db.from("cart_items").update({quantity:nextQuantity})
         .eq("user_id",user.id).eq("item_key",item.id);
       if (error) {
-        setNotice("Could not update the cart quantity. Run supabase/cart-quantity.sql in Supabase SQL Editor. " + error.message);
+        const detail=error.message || "";
+        setNotice(/quantity|schema cache/i.test(detail)
+          ? "Supabase is missing the cart quantity column. Run the latest supabase/cart-quantity.sql in Supabase SQL Editor, then refresh the page. " + detail
+          : "Could not update the cart quantity. " + detail);
         return false;
       }
       setCartItems(current=>current.map(currentItem=>currentItem.id===item.id?{...currentItem,quantity:nextQuantity}:currentItem));
@@ -900,7 +903,10 @@ export default function App() {
       user_id:user.id,item_key:item.id,item_snapshot:snapshot,quantity:1
     },{onConflict:"user_id,item_key"});
     if (error) {
-      setNotice("Could not save this item to your cart. Run supabase/cart-quantity.sql in Supabase SQL Editor. " + error.message);
+      const detail=error.message || "";
+      setNotice(/quantity|schema cache/i.test(detail)
+        ? "Supabase is missing the cart quantity column. Run the latest supabase/cart-quantity.sql in Supabase SQL Editor, then refresh the page. " + detail
+        : "Could not save this item to your cart. " + detail);
       return false;
     }
     setCartItems(current=>current.some(currentItem=>currentItem.id===item.id)?current:[...current,{...item,quantity:1}]);
@@ -985,7 +991,10 @@ export default function App() {
     const {error}=await db.from("cart_items").update({quantity:nextQuantity})
       .eq("user_id",user.id).eq("item_key",itemId);
     if(error) {
-      setNotice("Could not update the quantity. Run supabase/cart-quantity.sql in Supabase SQL Editor. "+error.message);
+      const detail=error.message || "";
+      setNotice(/quantity|schema cache/i.test(detail)
+        ? "Supabase is missing the cart quantity column. Run the latest supabase/cart-quantity.sql in Supabase SQL Editor, then refresh the page. " + detail
+        : "Could not update the quantity. " + detail);
       return;
     }
     setCartItems(current=>current.map(currentItem=>currentItem.id===itemId?{...currentItem,quantity:nextQuantity}:currentItem));
