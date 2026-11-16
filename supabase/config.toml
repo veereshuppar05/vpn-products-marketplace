@@ -2,3 +2,6 @@ project_id = "huvpbhmqeijhksjfkoqa"
 
 [functions.shiprocket]
 verify_jwt = true
+
+[functions.order-notifications]
+verify_jwt = true
