@@ -8,6 +8,7 @@ type Listing = {
   seller_name: string; image_urls: string[]; status: string; created_at: string;
   quantity?: number; stock?: number;
   package_weight_kg?: number | null; package_length_cm?: number | null; package_breadth_cm?: number | null; package_height_cm?: number | null;
+  is_test_product?: boolean;
 };
 type CustomerAddress = {
   id: string; full_name: string; phone: string; pincode: string;
@@ -1412,6 +1413,7 @@ export default function App() {
           </div>
           <div className="product-body">
             <small>{item.category} · {item.condition}</small>
+            {item.is_test_product && <span className="test-product-badge">₹1 TEST PRODUCT · CANCEL AFTER TEST</span>}
             <h3>{item.title}</h3>
             <strong>{money(item.price)}</strong>
             <p>⌖ {item.city}, {item.state}</p>
@@ -1526,6 +1528,7 @@ export default function App() {
               <div className="my-order-meta">
                 <span>Products: {money(Number(order.subtotal||0))}</span>
                 <span>Delivery: {money(Number(order.delivery_fee||0))}</span>
+                <span>Payment: {order.is_test_order?"Test only":order.payment_status==="paid"?"Prepaid received":"Prepaid pending"}</span>
                 <strong>Total: {money(Number(order.subtotal||0)+Number(order.delivery_fee||0))}</strong>
               </div>
               <div className="my-order-address">
@@ -1545,7 +1548,7 @@ export default function App() {
                 {cancellable && <button className="btn light danger-outline" type="button" disabled={busy} onClick={()=>void cancelCustomerOrder(order.id)}>{busy?"Cancelling…":"Cancel order"}</button>}
                 {delivered && !order.is_test_order && !returnRequest && <button className="btn light" type="button" onClick={()=>{setReturnOrderId(returnOrderId===order.id?"":order.id);setReturnDetails("");}}>Request return</button>}
                 {isAdmin && order.status==="pending_confirmation" && <button className="btn light" type="button" disabled={busy} onClick={()=>void adminUpdateOrder(order.id,"confirmed")}>Confirm order</button>}
-                {isAdmin && order.status!=="cancelled" && order.payment_status!=="paid" && <button className="btn light" type="button" disabled={busy} onClick={()=>void adminUpdateOrder(order.id,undefined,"paid")}>Mark prepaid received</button>}
+                {isAdmin && ["confirmed","processing"].includes(order.status) && order.payment_status!=="paid" && !order.is_test_order && <button className="btn light" type="button" disabled={busy} onClick={()=>void adminUpdateOrder(order.id,undefined,"paid")}>Mark prepaid received</button>}
                 {isAdmin && order.status==="confirmed" && order.payment_status==="paid" && !order.is_test_order && !order.shiprocket_order_id && <button className="btn primary" type="button" disabled={busy} onClick={()=>void adminBookShipment(order.id)}>Book Shiprocket shipment</button>}
               </div>
               {returnOrderId===order.id && <form className="order-return-form" onSubmit={event=>{event.preventDefault();void submitReturnRequest(order.id);}}>
@@ -1785,6 +1788,7 @@ export default function App() {
           <div className="detail-summary-card">
             <span className="detail-category">{selectedProduct.category}</span>
             <h1>{selectedProduct.title}</h1>
+            {selectedProduct.is_test_product && <div className="test-order-warning"><b>₹1 test listing</b><span>For checkout and cancellation testing only. No physical courier shipment will be created.</span></div>}
             <div className="detail-price">{money(selectedProduct.price)}</div>
             <span className="detail-condition">{selectedProduct.condition}</span>
             <p className="detail-location">⌖ {selectedProduct.city}, {selectedProduct.state}</p>
