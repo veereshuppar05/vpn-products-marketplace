@@ -159,3 +159,6 @@ $$;
 
 revoke all on function public.create_marketplace_order(uuid, jsonb) from public;
 grant execute on function public.create_marketplace_order(uuid, jsonb) to authenticated;
+
+-- Refresh the Supabase REST API schema cache so the new quantity column is visible.
+NOTIFY pgrst, 'reload schema';
