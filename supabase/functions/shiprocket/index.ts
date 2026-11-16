@@ -230,7 +230,7 @@ Deno.serve(async (request: Request) => {
         console.error("Could not save shipping quote:", quoteError?.message);
         throw new Error("Courier rates were returned but could not be saved. Please try again.");
       }
-      return respond({ quoteId: quote.id, couriers, validForMinutes: 20, paymentTypeQuoted: "Prepaid" });
+      return respond({ quoteId: quote.id, couriers, validForMinutes: 20, paymentMethod: "Prepaid", codAvailable: false });
     }
 
     if (action === "book") {
@@ -240,7 +240,13 @@ Deno.serve(async (request: Request) => {
       const { data: order, error: orderError } = await adminDb.from("marketplace_orders").select("*").eq("id", orderId).maybeSingle();
       if (orderError || !order) return respond({ error: "Order request was not found." }, 404);
       if (!["confirmed", "processing"].includes(order.status)) return respond({ error: "Confirm the order with the customer before booking the shipment." }, 409);
-      if (order.payment_status !== "paid") return respond({ error: "Record the customer's payment as paid before booking a prepaid shipment." }, 409);
+      if (String(order.payment_method || "prepaid").toLowerCase() !== "prepaid") {
+        return respond({ error: "Cash on Delivery is not supported. Shiprocket orders must use prepaid payment only." }, 409);
+      }
+      if (String(order.payment_status || "").toLowerCase() === "cod") {
+        return respond({ error: "Cash on Delivery is not available. Receive and verify advance payment before booking this shipment." }, 409);
+      }
+      if (order.payment_status !== "paid") return respond({ error: "Prepaid payment must be received and verified before booking the shipment." }, 409);
       if (!order.shipping_courier_id || !order.shipping_package || !order.shipping_quote_id) return respond({ error: "This order has no saved Shiprocket courier quote." }, 409);
       const pickupLocation = secret("SHIPROCKET_PICKUP_LOCATION");
       if (!pickupLocation) return respond({ error: "Set SHIPROCKET_PICKUP_LOCATION to the exact pickup-location name registered in Shiprocket." }, 503);
