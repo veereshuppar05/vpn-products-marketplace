@@ -42,9 +42,14 @@ function serviceKey() {
 }
 
 function escapeHtml(value: unknown) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character] || character);
+  const replacements: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return String(value ?? "").replace(/[&<>"']/g, (character) => replacements[character] || character);
 }
 
 function shortOrderId(id: string) {
@@ -76,7 +81,7 @@ async function sendEmail(input: { to: string; subject: string; html: string; ide
   return payload;
 }
 
-async function sendWhatsApp(input: { eventLabel: string; orderRef: string; customer: string; details: string; idempotencyKey: string }) {
+async function sendWhatsApp(input: { eventLabel: string; orderRef: string; customer: string; details: string }) {
   const token = secret("WHATSAPP_ACCESS_TOKEN");
   const phoneNumberId = secret("WHATSAPP_PHONE_NUMBER_ID");
   const recipient = secret("ORDER_NOTIFICATION_WHATSAPP").replace(/\D/g, "");
@@ -300,7 +305,6 @@ Deno.serve(async (request: Request) => {
           orderRef: "#" + orderRef,
           customer: (customerName + (customerEmail ? " · " + customerEmail : "")).slice(0, 120),
           details: summary,
-          idempotencyKey: eventKey + "/whatsapp",
         });
         await adminDb.from("marketplace_notification_events")
           .update({ whatsapp_status: "sent", whatsapp_error: null, updated_at: new Date().toISOString() })
