@@ -5,7 +5,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 ## Features
 - Responsive React + Vite website
 - Product categories, keyword and location search
-- Email/password sign-up and sign-in with Supabase Auth
+- Email-only sign-up and sign-in with Supabase Auth
 - Email/password sign-up with email confirmation. Existing phone-based accounts can still sign in if enabled in Supabase.
 - Seller product submissions with up to five photos
 - New listings are held for review before becoming public
@@ -22,7 +22,7 @@ Online payments, escrow, in-app chat, OTP login, identity verification, and a fu
 
 ## Registration method
 
-New customer accounts are registered using an email address and verified by email. SMS provider configuration is not required for new registrations. Existing phone-based accounts may continue to sign in if Phone authentication remains enabled in Supabase.
+New customer accounts and sign-ins both use an email address and password. Phone number is not accepted as a login identifier. SMS provider configuration is not required for authentication.
 
 ## Supabase setup
 1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
