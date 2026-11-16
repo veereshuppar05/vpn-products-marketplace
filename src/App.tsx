@@ -1147,6 +1147,7 @@ export default function App() {
     const savedAddress = data as CustomerAddress;
     setAddresses(current=>[savedAddress,...current.map(address=>savedAddress.is_default?{...address,is_default:false}:address)]);
     setSelectedAddressId(savedAddress.id);
+    setShippingQuoteId(""); setShippingQuotes([]); setSelectedShippingCourierId(null);
     setAddressFormOpen(false);
     setAddressDraft(emptyAddressDraft);
     setNotice("Delivery address saved.");
@@ -1157,7 +1158,10 @@ export default function App() {
     if (error) { setNotice("Could not delete this address: " + error.message); return; }
     const remaining = addresses.filter(address=>address.id!==addressId);
     setAddresses(remaining);
-    if (selectedAddressId===addressId) setSelectedAddressId(remaining.find(address=>address.is_default)?.id || remaining[0]?.id || "");
+    if (selectedAddressId===addressId) {
+      setSelectedAddressId(remaining.find(address=>address.is_default)?.id || remaining[0]?.id || "");
+      setShippingQuoteId(""); setShippingQuotes([]); setSelectedShippingCourierId(null);
+    }
     setNotice("Delivery address deleted.");
   };
   const requestShippingQuotes = async () => {
