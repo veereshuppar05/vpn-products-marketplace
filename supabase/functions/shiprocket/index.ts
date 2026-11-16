@@ -393,6 +393,210 @@ Deno.serve(async (request: Request) => {
       return respond({ ok: true, orderId, shiprocketOrderId: srOrderId, shipmentId, awb, courierName, trackingUrl, labelUrl, manifestUrl });
     }
 
+    if (action === "cancel") {
+      const orderId = String(body.orderId || "");
+      const reason = String(body.reason || "Cancelled by customer").trim().slice(0,500);
+      if (!orderId) return respond({ error: "Order request ID is required." }, 400);
+      const { data: order, error: orderError } = await adminDb.from("marketplace_orders").select("*").eq("id", orderId).maybeSingle();
+      if (orderError || !order) return respond({ error: "Order request was not found." }, 404);
+      if (order.buyer_id !== user.id && !isAdmin) return respond({ error: "You are not allowed to cancel this order." }, 403);
+      const currentStatus = String(order.shipping_status || "").toLowerCase();
+      const orderStatus = String(order.status || "").toLowerCase();
+      if (orderStatus === "cancelled") return respond({ ok: true, alreadyCancelled: true, orderId });
+      if (orderStatus === "delivered" || /shipped|in transit|out for delivery|delivered|picked up/.test(currentStatus)) {
+        return respond({ error: "This order has already been dispatched or delivered. It cannot be cancelled; request a return after delivery instead." }, 409);
+      }
+      // If a Shiprocket order exists, cancel it at Shiprocket first. Never mark the
+      // website order cancelled if the carrier refuses the cancellation.
+      if (order.shiprocket_order_id) {
+        await sr("/orders/cancel", "POST", { ids: [Number(order.shiprocket_order_id)] });
+      }
+      const { error: updateError } = await adminDb.from("marketplace_orders").update({
+        status: "cancelled",
+        shipping_status: order.shiprocket_order_id ? "cancelled" : (order.is_test_order ? "test_order_cancelled" : "cancelled"),
+        cancellation_reason: reason,
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: user.id,
+      }).eq("id", orderId);
+      if (updateError) throw new Error("The courier/order cancellation was requested, but the website order could not be updated. Contact support before retrying.");
+      return respond({ ok: true, orderId, status: "cancelled" });
+    }
+
+    if (action === "admin-update-order") {
+      if (!isAdmin) return respond({ error: "Only a VPN Products administrator can update order confirmation and payment." }, 403);
+      const orderId = String(body.orderId || "");
+      const status = String(body.status || "");
+      const paymentStatus = String(body.paymentStatus || "");
+      if (!orderId) return respond({ error: "Order request ID is required." }, 400);
+      if (status && !["pending_confirmation", "confirmed", "processing", "cancelled"].includes(status)) {
+        return respond({ error: "Invalid order status." }, 400);
+      }
+      if (paymentStatus && !["pending", "paid"].includes(paymentStatus)) {
+        return respond({ error: "Only prepaid payment states pending and paid are accepted. COD is not supported." }, 400);
+      }
+      const patch: Record<string, unknown> = {};
+      if (status) patch.status = status;
+      if (paymentStatus) patch.payment_status = paymentStatus;
+      const { data, error } = await adminDb.from("marketplace_orders").update(patch).eq("id", orderId).select("id,status,payment_status").single();
+      if (error || !data) throw new Error(error?.message || "Order update failed.");
+      return respond({ ok: true, order: data });
+    }
+
+    if (action === "reject-return") {
+      if (!isAdmin) return respond({ error: "Only a VPN Products administrator can process return requests." }, 403);
+      const returnRequestId = String(body.returnRequestId || "");
+      const note = String(body.note || "").trim().slice(0, 1200);
+      if (!returnRequestId) return respond({ error: "Return request ID is required." }, 400);
+      const { data: returnRequest, error: returnError } = await adminDb.from("marketplace_return_requests")
+        .select("id,status").eq("id", returnRequestId).maybeSingle();
+      if (returnError || !returnRequest) return respond({ error: "Return request was not found." }, 404);
+      if (returnRequest.status !== "requested") return respond({ error: "Only pending return requests can be rejected." }, 409);
+      const { error } = await adminDb.from("marketplace_return_requests").update({
+        status: "rejected", admin_note: note || "Return request not approved.", updated_at: new Date().toISOString(),
+      }).eq("id", returnRequestId);
+      if (error) throw new Error("Could not update the return request.");
+      return respond({ ok: true, returnRequestId, status: "rejected" });
+    }
+
+    if (action === "approve-return") {
+      if (!isAdmin) return respond({ error: "Only a VPN Products administrator can approve and book return pickups." }, 403);
+      const returnRequestId = String(body.returnRequestId || "");
+      if (!returnRequestId) return respond({ error: "Return request ID is required." }, 400);
+      const { data: returnRequest, error: returnError } = await adminDb.from("marketplace_return_requests")
+        .select("*").eq("id", returnRequestId).maybeSingle();
+      if (returnError || !returnRequest) return respond({ error: "Return request was not found." }, 404);
+      if (returnRequest.status !== "requested") return respond({ error: "This return request has already been processed." }, 409);
+      const { data: order, error: orderError } = await adminDb.from("marketplace_orders").select("*").eq("id", returnRequest.order_id).maybeSingle();
+      if (orderError || !order) return respond({ error: "Original order was not found." }, 404);
+      if (order.is_test_order) return respond({ error: "The ₹1 test order cannot be returned or shipped." }, 409);
+      if (order.status !== "delivered" && !/delivered/i.test(String(order.shipping_status || ""))) return respond({ error: "The original order must be delivered before a return pickup can be booked." }, 409);
+      if (order.payment_status !== "paid") return respond({ error: "Verify the original prepaid payment before arranging a reverse pickup." }, 409);
+      const shopAddress = secret("SHIPROCKET_PICKUP_ADDRESS");
+      const shopCity = secret("SHIPROCKET_PICKUP_CITY");
+      const shopState = secret("SHIPROCKET_PICKUP_STATE");
+      const shopPhone = secret("SHIPROCKET_PICKUP_PHONE");
+      const shopPostcode = secret("SHIPROCKET_PICKUP_POSTCODE");
+      if (!shopAddress || !shopCity || !shopState || !shopPhone || !/^\d{6}$/.test(shopPostcode)) {
+        return respond({ error: "To book reverse pickups, also configure SHIPROCKET_PICKUP_ADDRESS, SHIPROCKET_PICKUP_CITY, SHIPROCKET_PICKUP_STATE and SHIPROCKET_PICKUP_PHONE in Supabase secrets." }, 503);
+      }
+      if (!order.shipping_package) return respond({ error: "Original parcel dimensions are missing; a reverse pickup cannot be booked." }, 409);
+      const { data: orderItems, error: itemError } = await adminDb.from("marketplace_order_items").select("*").eq("order_id", order.id);
+      if (itemError || !orderItems?.length) throw new Error("Original order products could not be loaded.");
+      const buyerResult = await adminDb.auth.admin.getUserById(order.buyer_id);
+      if (buyerResult.error || !buyerResult.data.user) throw new Error("Customer account could not be loaded.");
+      const buyer = buyerResult.data.user;
+      const address = order.delivery_address || {};
+      const customer = splitCustomerName(String(address.full_name || buyer.user_metadata?.full_name || "Customer"));
+      const packageDetails = order.shipping_package;
+      const returnOrderCode = "R" + String(returnRequest.id).replace(/-/g, "").slice(0, 19);
+      const returnPayload = {
+        order_id: returnOrderCode,
+        order_date: new Date().toISOString().slice(0, 10),
+        payment_method: "Prepaid",
+        sub_total: Number(order.subtotal),
+        pickup_customer_name: customer.first,
+        pickup_last_name: customer.last,
+        pickup_address: String(address.address_line1 || ""),
+        pickup_address_2: [address.address_line2, address.landmark, address.district].filter(Boolean).join(", "),
+        pickup_city: String(address.city || ""),
+        pickup_state: String(address.state || ""),
+        pickup_country: "India",
+        pickup_pincode: String(address.pincode || ""),
+        pickup_email: buyer.email || "",
+        pickup_phone: String(address.phone || ""),
+        shipping_customer_name: "VPN Products and Services",
+        shipping_address: shopAddress,
+        shipping_city: shopCity,
+        shipping_state: shopState,
+        shipping_country: "India",
+        shipping_pincode: shopPostcode,
+        shipping_phone: shopPhone,
+        shipping_email: secret("SHIPROCKET_EMAIL"),
+        order_items: orderItems.map((item: any) => ({
+          name: item.product_title,
+          sku: String(item.product_key),
+          units: Number(item.quantity),
+          selling_price: Number(item.unit_price),
+          discount: 0,
+          tax: 0,
+          hsn: "",
+        })),
+        weight: Number(packageDetails.weight_kg),
+        length: Number(packageDetails.length_cm),
+        breadth: Number(packageDetails.breadth_cm),
+        height: Number(packageDetails.height_cm),
+        declared_value: Math.round(Number(order.subtotal)),
+        is_return: 1,
+      };
+      const created = await sr("/orders/create/return", "POST", returnPayload);
+      const returnOrderId = Number(deepValue(created, ["order_id"]));
+      const returnShipmentId = Number(deepValue(created, ["shipment_id"]));
+      if (!Number.isFinite(returnOrderId) || !Number.isFinite(returnShipmentId)) {
+        throw new Error("Shiprocket did not return the reverse-order and shipment IDs. Check the Shiprocket panel before retrying.");
+      }
+      const returnParams = new URLSearchParams({
+        pickup_postcode: String(address.pincode || ""),
+        delivery_postcode: shopPostcode,
+        cod: "0",
+        weight: String(packageDetails.weight_kg),
+        length: String(packageDetails.length_cm),
+        breadth: String(packageDetails.breadth_cm),
+        height: String(packageDetails.height_cm),
+        declared_value: String(Math.round(Number(order.subtotal))),
+        is_return: "1",
+      });
+      const serviceability = await sr("/courier/serviceability/?" + returnParams.toString());
+      const available = serviceability?.data?.available_courier_companies || serviceability?.available_courier_companies || [];
+      const couriers = (Array.isArray(available) ? available : [])
+        .map((item: any) => ({
+          courier_id: Number(item.courier_company_id ?? item.courier_id),
+          rate: Number(item.rate ?? item.freight_charge ?? item.total_shipping_charges),
+        }))
+        .filter((item: any) => Number.isInteger(item.courier_id) && item.courier_id > 0 && Number.isFinite(item.rate) && item.rate >= 0)
+        .sort((a: any, b: any) => a.rate - b.rate);
+      if (!couriers.length) throw new Error("No reverse-pickup courier is available for the customer's PIN code.");
+      const assigned = await sr("/courier/assign/awb", "POST", {
+        shipment_id: returnShipmentId,
+        courier_id: couriers[0].courier_id,
+      });
+      const awb = String(deepValue(assigned, ["awb_code"]) || "");
+      if (!awb) throw new Error("The return order was created but Shiprocket did not return a reverse-pickup AWB.");
+      await sr("/courier/generate/pickup", "POST", { shipment_id: [returnShipmentId] });
+      const trackingUrl = "https://shiprocket.co/tracking/" + encodeURIComponent(awb);
+      const { error: updateError } = await adminDb.from("marketplace_return_requests").update({
+        status: "pickup_scheduled",
+        admin_note: "Return approved. Reverse pickup booked with Shiprocket.",
+        shiprocket_return_order_id: returnOrderId,
+        shiprocket_return_shipment_id: returnShipmentId,
+        return_awb: awb,
+        return_tracking_url: trackingUrl,
+        return_shipping_status: "pickup_scheduled",
+        updated_at: new Date().toISOString(),
+      }).eq("id", returnRequestId);
+      if (updateError) throw new Error("Shiprocket reverse pickup was booked, but the return request could not be updated. Check Shiprocket before retrying.");
+      return respond({ ok: true, returnRequestId, returnOrderId, returnShipmentId, awb, trackingUrl });
+    }
+
+    if (action === "track-return") {
+      const returnRequestId = String(body.returnRequestId || "");
+      if (!returnRequestId) return respond({ error: "Return request ID is required." }, 400);
+      const { data: returnRequest, error } = await adminDb.from("marketplace_return_requests")
+        .select("id,buyer_id,return_awb,status").eq("id", returnRequestId).maybeSingle();
+      if (error || !returnRequest) return respond({ error: "Return request was not found." }, 404);
+      if (returnRequest.buyer_id !== user.id && !isAdmin) return respond({ error: "You are not allowed to view this return." }, 403);
+      if (!returnRequest.return_awb) return respond({ error: "Reverse pickup has not been booked yet." }, 409);
+      const tracking = await sr("/courier/track/awb/" + encodeURIComponent(returnRequest.return_awb));
+      const status = String(deepValue(tracking, ["current_status", "shipment_status", "status"]) || "Return in progress");
+      const received = /delivered/i.test(status);
+      const { error: updateError } = await adminDb.from("marketplace_return_requests").update({
+        return_shipping_status: status,
+        status: received ? "received" : (returnRequest.status === "pickup_scheduled" ? "in_transit" : returnRequest.status),
+        updated_at: new Date().toISOString(),
+      }).eq("id", returnRequestId);
+      if (updateError) throw new Error("Could not save the latest reverse-pickup status.");
+      return respond({ returnRequestId, awb: returnRequest.return_awb, status, received, trackingUrl: "https://shiprocket.co/tracking/" + encodeURIComponent(returnRequest.return_awb), tracking });
+    }
+
     if (action === "track") {
       const orderId = String(body.orderId || "");
       if (!orderId) return respond({ error: "Order request ID is required." }, 400);
