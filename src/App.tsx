@@ -1502,7 +1502,7 @@ export default function App() {
         </div> : <div className="my-orders-list">
           {orders.map(order=>{
             const delivered = order.status==="delivered" || /delivered/i.test(String(order.shipping_status||""));
-            const dispatched = /shipped|in transit|out for delivery|picked up|delivered/i.test(String(order.shipping_status||""));
+            const dispatched = /shipped|in transit|out for pickup|out_for_pickup|out for delivery|handover to courier|picked up|delivered/i.test(String(order.shipping_status||""));
             const cancellable = order.status!=="cancelled" && !delivered && !dispatched;
             const returnRequest = order.returnRequest;
             const busy = orderBusyId===order.id;
