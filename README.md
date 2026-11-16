@@ -6,6 +6,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Responsive React + Vite website
 - Product categories, keyword and location search
 - Email-only sign-up and sign-in with Supabase Auth
+- Email password recovery using a Supabase reset link and secure new-password form
 - Email/password sign-up with email confirmation. Existing phone-based accounts can still sign in if enabled in Supabase.
 - Seller product submissions with up to five photos
 - New listings are held for review before becoming public
