@@ -1439,7 +1439,7 @@ export default function App() {
               <div className="cart-summary-row"><span>Delivery fee</span><b>{selectedShippingQuote?money(selectedShippingQuote.rate):"Check options"}</b></div>
               <div className="cart-summary-total"><span>Estimated total</span><strong>{money(orderGrandTotal)}</strong></div>
               <p className="commerce-note">Shipping and final availability are confirmed before the order is accepted.</p>
-              <button className="btn primary full cart-page-checkout" type="button" disabled={!chosenAddress || checkoutItems.length===0 || !selectedShippingQuote || commerceSaving || shippingQuoteBusy onClick={()=>setCheckoutStep("review")}>Continue to review →</button>
+              <button className="btn primary full cart-page-checkout" type="button" disabled={!chosenAddress || checkoutItems.length===0 || !selectedShippingQuote || commerceSaving || shippingQuoteBusy} onClick={()=>setCheckoutStep("review")}>Continue to review →</button>
             </aside>
           </div>
         </>}
