@@ -137,10 +137,8 @@ Deno.serve(async (request: Request) => {
       if (!addressId || itemIds.length < 1 || itemIds.length > 20 || new Set(itemIds).size !== itemIds.length) {
         return respond({ error: "Select a delivery address and between 1 and 20 cart products." }, 400);
       }
-      const pickupPostcode = secret("SHIPROCKET_PICKUP_POSTCODE");
-      if (!/^\d{6}$/.test(pickupPostcode)) {
-        return respond({ error: "Your shop pickup PIN code is not configured. Set SHIPROCKET_PICKUP_POSTCODE in Supabase secrets." }, 503);
-      }
+      let pickupPostcode = secret("SHIPROCKET_PICKUP_POSTCODE");
+      const hasConfiguredPickupPostcode = /^\d{6}$/.test(pickupPostcode);
       const { data: address, error: addressError } = await userDb
         .from("customer_addresses").select("id,pincode").eq("id", addressId).eq("user_id", user.id).maybeSingle();
       if (addressError || !address) return respond({ error: "The selected delivery address could not be found." }, 404);
@@ -157,7 +155,7 @@ Deno.serve(async (request: Request) => {
       }
       const { data: listings, error: listingsError } = await userDb
         .from("listings")
-        .select("id,title,price,seller_id,status,package_weight_kg,package_length_cm,package_breadth_cm,package_height_cm")
+        .select("id,title,price,seller_id,status,package_weight_kg,package_length_cm,package_breadth_cm,package_height_cm,is_test_product")
         .in("id", itemIds).eq("status", "active");
       if (listingsError) throw new Error("Could not load the product packing details.");
       if (!listings || listings.length !== itemIds.length) return respond({ error: "A product is no longer available." }, 409);
@@ -183,7 +181,7 @@ Deno.serve(async (request: Request) => {
         length = Math.max(length, l);
         breadth = Math.max(breadth, b);
         declaredValue += Number(item.price) * quantity;
-        packageLines.push({ listing_id: item.id, quantity, weight_kg: w, length_cm: l, breadth_cm: b, height_cm: h });
+        packageLines.push({ listing_id: item.id, quantity, weight_kg: w, length_cm: l, breadth_cm: b, height_cm: h, is_test_product: item.is_test_product === true });
       }
       const packageDetails = {
         weight_kg: Number(weight.toFixed(3)),
@@ -193,28 +191,52 @@ Deno.serve(async (request: Request) => {
         packing_method: "stacked_product_packages",
         lines: packageLines,
       };
-      const params = new URLSearchParams({
-        pickup_postcode: pickupPostcode,
-        delivery_postcode: String(address.pincode),
-        cod: "0",
-        weight: String(packageDetails.weight_kg),
-        length: String(packageDetails.length_cm),
-        breadth: String(packageDetails.breadth_cm),
-        height: String(packageDetails.height_cm),
-        declared_value: String(Math.round(declaredValue)),
-      });
-      const serviceability = await sr("/courier/serviceability/?" + params.toString());
-      const available = serviceability?.data?.available_courier_companies || serviceability?.available_courier_companies || [];
-      const couriers = (Array.isArray(available) ? available : [])
-        .map((item: any) => ({
-          courier_id: Number(item.courier_company_id ?? item.courier_id),
-          courier_name: String(item.courier_name || item.name || "Courier service"),
-          rate: Number(item.rate ?? item.freight_charge ?? item.total_shipping_charges),
-          etd: String(item.etd || item.estimated_delivery_date || ""),
-          estimated_delivery_days: Number(item.estimated_delivery_days) || undefined,
-        }))
-        .filter((item: any) => Number.isInteger(item.courier_id) && item.courier_id > 0 && Number.isFinite(item.rate) && item.rate >= 0)
-        .sort((a: any, b: any) => a.rate - b.rate);
+      const testFlags = packageLines.map(line => line.is_test_product === true);
+      const isTestOrder = testFlags.every(Boolean);
+      if (testFlags.some(Boolean) && !isTestOrder) {
+        return respond({ error: "The ₹1 test item must be checked out by itself, not mixed with normal products." }, 400);
+      }
+      if (isTestOrder && (itemIds.length !== 1 || Number(cartRows[0]?.quantity || 1) !== 1)) {
+        return respond({ error: "The ₹1 test product is limited to one item per test order." }, 400);
+      }
+      if (!isTestOrder && !hasConfiguredPickupPostcode) {
+        return respond({ error: "Your shop pickup PIN code is not configured. Set SHIPROCKET_PICKUP_POSTCODE in Supabase secrets." }, 503);
+      }
+      if (isTestOrder && !hasConfiguredPickupPostcode) pickupPostcode = "000000";
+
+      let couriers: Array<{courier_id:number;courier_name:string;rate:number;etd:string;estimated_delivery_days?:number}> = [];
+      if (isTestOrder) {
+        // Test orders bypass Shiprocket completely: no actual courier quote or pickup is requested.
+        couriers = [{
+          courier_id: 0,
+          courier_name: "TEST ONLY — No courier shipment",
+          rate: 0,
+          etd: "Cancellation testing only",
+        }];
+      } else {
+        const params = new URLSearchParams({
+          pickup_postcode: pickupPostcode,
+          delivery_postcode: String(address.pincode),
+          cod: "0",
+          weight: String(packageDetails.weight_kg),
+          length: String(packageDetails.length_cm),
+          breadth: String(packageDetails.breadth_cm),
+          height: String(packageDetails.height_cm),
+          declared_value: String(Math.round(declaredValue)),
+        });
+        const serviceability = await sr("/courier/serviceability/?" + params.toString());
+        const available = serviceability?.data?.available_courier_companies || serviceability?.available_courier_companies || [];
+        couriers = (Array.isArray(available) ? available : [])
+          .map((item: any) => ({
+            courier_id: Number(item.courier_company_id ?? item.courier_id),
+            courier_name: String(item.courier_name || item.name || "Courier service"),
+            rate: Number(item.rate ?? item.freight_charge ?? item.total_shipping_charges),
+            etd: String(item.etd || item.estimated_delivery_date || ""),
+            estimated_delivery_days: Number(item.estimated_delivery_days) || undefined,
+          }))
+          .filter((item: any) => Number.isInteger(item.courier_id) && item.courier_id > 0 && Number.isFinite(item.rate) && item.rate >= 0)
+          .sort((a: any, b: any) => a.rate - b.rate);
+      }
       if (!couriers.length) return respond({ quoteId: null, couriers: [], message: "No courier service is available for this PIN code and package." });
 
       const { data: quote, error: quoteError } = await adminDb.from("shipping_quotes").insert({
@@ -230,7 +252,7 @@ Deno.serve(async (request: Request) => {
         console.error("Could not save shipping quote:", quoteError?.message);
         throw new Error("Courier rates were returned but could not be saved. Please try again.");
       }
-      return respond({ quoteId: quote.id, couriers, validForMinutes: 20, paymentMethod: "Prepaid", codAvailable: false });
+      return respond({ quoteId: quote.id, couriers, validForMinutes: 20, paymentMethod: "Prepaid", codAvailable: false, testMode: isTestOrder });
     }
 
     if (action === "book") {
@@ -247,6 +269,7 @@ Deno.serve(async (request: Request) => {
         return respond({ error: "Cash on Delivery is not available. Receive and verify advance payment before booking this shipment." }, 409);
       }
       if (order.payment_status !== "paid") return respond({ error: "Prepaid payment must be received and verified before booking the shipment." }, 409);
+      if (order.is_test_order === true) return respond({ error: "This is a ₹1 checkout test order. It can be cancelled in My Orders, but it cannot be shipped or booked with Shiprocket." }, 409);
       if (!order.shipping_courier_id || !order.shipping_package || !order.shipping_quote_id) return respond({ error: "This order has no saved Shiprocket courier quote." }, 409);
       const pickupLocation = secret("SHIPROCKET_PICKUP_LOCATION");
       if (!pickupLocation) return respond({ error: "Set SHIPROCKET_PICKUP_LOCATION to the exact pickup-location name registered in Shiprocket." }, 503);
@@ -380,8 +403,15 @@ Deno.serve(async (request: Request) => {
       if (!order.shipping_awb) return respond({ error: "This order has not been booked with a courier yet." }, 409);
       const tracking = await sr("/courier/track/awb/" + encodeURIComponent(order.shipping_awb));
       const status = String(deepValue(tracking, ["current_status", "shipment_status", "status"]) || order.shipping_status);
-      await adminDb.from("marketplace_orders").update({ shipping_status: status }).eq("id", orderId);
-      return respond({ orderId, awb: order.shipping_awb, trackingUrl: "https://shiprocket.co/tracking/" + encodeURIComponent(order.shipping_awb), tracking });
+      const delivered = /delivered/i.test(status);
+      const update: Record<string, unknown> = {
+        shipping_status: status,
+        tracking_payload: tracking,
+        tracking_updated_at: new Date().toISOString(),
+      };
+      if (delivered) update.status = "delivered";
+      await adminDb.from("marketplace_orders").update(update).eq("id", orderId);
+      return respond({ orderId, awb: order.shipping_awb, trackingUrl: "https://shiprocket.co/tracking/" + encodeURIComponent(order.shipping_awb), status, delivered, tracking });
     }
 
     return respond({ error: "Unsupported Shiprocket action." }, 400);
