@@ -265,6 +265,7 @@ export default function App() {
   const profileMenuRef = useRef<HTMLDivElement|null>(null);
   const [sellOpen,setSellOpen] = useState(false);
   const [mode,setMode] = useState<"login"|"signup">("login");
+  const [showResendConfirmation,setShowResendConfirmation] = useState(false);
   const [email,setEmail] = useState("");
   const [fullName,setFullName] = useState("");
   const [password,setPassword] = useState("");
@@ -381,8 +382,9 @@ export default function App() {
     if (errorCode || errorDescription) {
       setMode("login");
       setAuthOpen(true);
+      setShowResendConfirmation(errorCode === "otp_expired");
       setNotice(errorCode === "otp_expired"
-        ? "This email confirmation link has expired. Enter your email below and choose Resend confirmation email."
+        ? "This email confirmation link has expired. Enter your email below and request a new confirmation email."
         : errorDescription || "Email verification could not be completed. Please request a new confirmation email.");
       window.history.replaceState({}, "", window.location.pathname + window.location.search);
     }
@@ -656,13 +658,15 @@ export default function App() {
       return;
     }
 
+    setShowResendConfirmation(false);
     const result = await db.auth.signInWithPassword({email:identifier,password});
     if (result.error) {
       setNotice(result.error.message);
       if (/email not confirmed/i.test(result.error.message)) {
-        setNotice("Please confirm your email first. Use Resend confirmation email below to get a fresh link.");
+        setShowResendConfirmation(true);
+        setNotice("Your email address is not verified yet. Request a new confirmation email below.");
       }
-    } else { setNotice("You are signed in."); setAuthOpen(false); }
+    } else { setShowResendConfirmation(false); setNotice("You are signed in."); setAuthOpen(false); }
   };
 
   const submitListing = async (event:FormEvent) => {
@@ -1659,7 +1663,7 @@ export default function App() {
         </>}
       </div>
     </div>}
-    {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{mode==="login"?"Welcome back":"Create an account"}</h2><form key={mode} autoComplete={mode==="login"?"on":"off"} onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" name="signup-full-name" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email Address<input required type="email" name={mode==="login"?"username":"signup-email"} autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Enter your email address"/></label><label>Password<input required minLength={8} name={mode==="login"?"password":"signup-new-password"} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={8} name="signup-confirm-password" autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password (minimum 8 characters)"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Register using your email address. We'll send you a confirmation link before you can sign in.</p>}</form>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button type="button" className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setEmail("");setPassword("");setConfirmPassword("");setFullName("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></div></div>}
+    {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{mode==="login"?"Welcome back":"Create an account"}</h2><form key={mode} autoComplete={mode==="login"?"on":"off"} onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" name="signup-full-name" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email Address<input required type="email" name={mode==="login"?"username":"signup-email"} autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Enter your email address"/></label><label>Password<input required minLength={8} name={mode==="login"?"password":"signup-new-password"} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={8} name="signup-confirm-password" autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password (minimum 8 characters)"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Register using your email address. We'll send you a confirmation link before you can sign in.</p>}</form>{mode==="login" && showResendConfirmation && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button type="button" className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setShowResendConfirmation(false);setEmail("");setPassword("");setConfirmPassword("");setFullName("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></div></div>}
     {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
   </div>;
 }
