@@ -269,9 +269,6 @@ export default function App() {
   const [fullName,setFullName] = useState("");
   const [password,setPassword] = useState("");
   const [confirmPassword,setConfirmPassword] = useState("");
-  const [otpRequired,setOtpRequired] = useState(false);
-  const [pendingPhone,setPendingPhone] = useState("");
-  const [otpCode,setOtpCode] = useState("");
   const [title,setTitle] = useState("");
   const [description,setDescription] = useState("");
   const [price,setPrice] = useState("");
@@ -608,41 +605,22 @@ export default function App() {
     return message;
   };
 
-  const resendPhoneOtp = async () => {
-    if (!db || !pendingPhone) {
-      setNotice("Start phone registration again to request a verification code.");
-      return;
-    }
-    const {error}=await db.auth.resend({type:"sms",phone:pendingPhone});
-    if (error) {
-      setNotice(phoneAuthErrorMessage(error));
-      return;
-    }
-    setNotice("A new verification code has been requested. Check your SMS messages.");
-  };
-
   const authenticate = async (event:FormEvent) => {
     event.preventDefault();
     if (!db) { setNotice("Connect the Supabase project settings to enable accounts."); return; }
 
-    // Accept only a valid email address or an Indian 10-digit mobile number.
-    // Spaces, brackets and hyphens are allowed as phone-number formatting.
+    // New accounts are email-only. Existing phone-based accounts can still sign in.
     const identifier = email.trim();
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(identifier);
     const normalizedPhone = identifier.replace(/[\s()-]/g,"");
     const phoneMatch = normalizedPhone.match(/^(?:\+91|91|0)?([6-9]\d{9})$/);
     const authPhone = phoneMatch ? "+91" + phoneMatch[1] : "";
 
-    if (otpRequired) {
-      if (!otpCode.trim()) { setNotice("Enter the verification code sent to your phone."); return; }
-      const {error} = await db.auth.verifyOtp({phone:pendingPhone,token:otpCode.trim(),type:"sms"});
-      if (error) { setNotice(phoneAuthErrorMessage(error)); return; }
-      setOtpRequired(false); setOtpCode(""); setPendingPhone(""); setAuthOpen(false);
-      setNotice("Phone number verified. Your account is ready.");
+    if (mode==="signup" && !isEmail) {
+      setNotice("Please enter a valid email address. New accounts can currently be registered using email only.");
       return;
     }
-
-    if (!isEmail && !authPhone) {
+    if (mode==="login" && !isEmail && !authPhone) {
       setNotice("Enter a valid email address or a valid 10-digit Indian mobile number.");
       return;
     }
@@ -653,24 +631,20 @@ export default function App() {
     if (mode === "signup") {
       if (!fullName.trim()) { setNotice("Enter your name to create an account."); return; }
       if (password !== confirmPassword) { setNotice("Password and Confirm Password do not match."); return; }
-      const result = isEmail
-        ? await db.auth.signUp({email:identifier,password,options:{data:{full_name:fullName.trim()},emailRedirectTo:authRedirectUrl}})
-        : await db.auth.signUp({phone:authPhone,password,options:{data:{full_name:fullName.trim()},channel:"sms"}});
+      const result = await db.auth.signUp({
+        email:identifier,
+        password,
+        options:{data:{full_name:fullName.trim()},emailRedirectTo:authRedirectUrl}
+      });
       if (result.error) {
-        if (!isEmail) {
-          const code=String((result.error as any).code || "").toLowerCase();
-          if (code==="phone_exists" || code==="user_already_exists" || /phone.*already|already.*phone/i.test(result.error.message)) setMode("login");
-          setNotice(phoneAuthErrorMessage(result.error));
+        const authError = result.error.message.toLowerCase();
+        if (/already registered|email_exists|user_already_exists/.test(authError)) {
+          setMode("login");
+          setNotice("This email address is already registered. Please sign in, or use a different email address.");
+        } else if (/rate limit|too many requests|email rate limit/.test(authError)) {
+          setNotice("Registration email limit reached. Please wait before trying again, or configure a custom SMTP email provider in Supabase.");
         } else {
-          const authError = result.error.message.toLowerCase();
-          if (/already registered|email_exists/.test(authError)) {
-            setMode("login");
-            setNotice("This email address is already registered. Please sign in, or use a different email address.");
-          } else if (/rate limit|too many requests|email rate limit/.test(authError)) {
-            setNotice("Registration email limit reached. Please wait before trying again, or configure a custom SMTP email provider in Supabase.");
-          } else {
-            setNotice(result.error.message);
-          }
+          setNotice(result.error.message);
         }
         return;
       }
@@ -682,12 +656,7 @@ export default function App() {
         setNotice("This email address is already registered. Please sign in with your existing account or use a different email address.");
         return;
       }
-      if (!isEmail && !result.data.session) {
-        setPendingPhone(authPhone); setOtpCode(""); setOtpRequired(true);
-        setNotice("A verification code has been sent by SMS. Enter it to finish creating your account.");
-        return;
-      }
-      setNotice(isEmail && !result.data.session
+      setNotice(!result.data.session
         ? "Account created. Check your email to verify your account before signing in."
         : "Account created successfully.");
       setAuthOpen(false);
@@ -769,9 +738,6 @@ export default function App() {
     setPassword("");
     setConfirmPassword("");
     setFullName("");
-    setOtpRequired(false);
-    setPendingPhone("");
-    setOtpCode("");
     setNotice("Signed out successfully.");
   };
   const saveProfileSettings = async (event:FormEvent) => {
@@ -1706,7 +1672,7 @@ export default function App() {
         </>}
       </div>
     </div>}
-    {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{otpRequired?"Verify your phone number":mode==="login"?"Welcome back":"Create an account"}</h2>{otpRequired ? <form onSubmit={authenticate}><p className="auth-hint">Enter the SMS verification code sent to {pendingPhone}.</p><label>Verification code<input required type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code"/></label><button className="btn primary full">Verify phone</button><button className="switch" type="button" onClick={resendPhoneOtp}>Resend SMS verification code</button></form> : <form key={mode} autoComplete={mode==="login"?"on":"off"} onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" name="signup-full-name" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email or Phone Number<input required type="text" name={mode==="login"?"username":"signup-identifier"} autoComplete={mode==="login"?"username":"off"} value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address or mobile number"/></label><label>Password<input required minLength={8} name={mode==="login"?"password":"signup-new-password"} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={8} name="signup-confirm-password" autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password (minimum 8 characters)"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Use an email address or an Indian 10-digit mobile number. Phone registration requires SMS verification.</p>}</form>}{!otpRequired && <>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button type="button" className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setEmail("");setPassword("");setConfirmPassword("");setFullName("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></>}</div></div>}
+    {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{mode==="login"?"Welcome back":"Create an account"}</h2><form key={mode} autoComplete={mode==="login"?"on":"off"} onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" name="signup-full-name" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>{mode==="login"?"Email or Phone Number":"Email Address"}<input required type={mode==="signup"?"email":"text"} name={mode==="login"?"username":"signup-email"} autoComplete={mode==="login"?"username": "email"} value={email} onChange={e=>setEmail(e.target.value)} placeholder={mode==="login"?"Email address or mobile number":"Enter your email address"}/></label><label>Password<input required minLength={8} name={mode==="login"?"password":"signup-new-password"} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={8} name="signup-confirm-password" autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password (minimum 8 characters)"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Register using your email address. We'll send you a confirmation link before you can sign in.</p>}</form>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button type="button" className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setEmail("");setPassword("");setConfirmPassword("");setFullName("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></div></div>}
     {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
   </div>;
 }
