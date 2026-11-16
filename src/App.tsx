@@ -1147,6 +1147,27 @@ export default function App() {
     void notifyOrderEvent("return_requested",orderId,String(data));
     await loadCommerceData(user);
   };
+  const retryOrderNotifications = async (orderId:string,status:string,returnRequestId?:string) => {
+    if (!db || !user || !isAdmin) return;
+    setOrderBusyId(orderId);
+    const eventTypes:Array<"order_placed"|"order_cancelled"|"return_requested"> = status==="cancelled"
+      ? ["order_placed","order_cancelled"] : ["order_placed"];
+    if (returnRequestId) eventTypes.push("return_requested");
+    const summaries:string[] = [];
+    for (const eventType of eventTypes) {
+      const {data,error} = await db.functions.invoke("order-notifications",{
+        body:{eventType,orderId,...(eventType==="return_requested" && returnRequestId ? {returnRequestId} : {})}
+      });
+      if (error || data?.error) {
+        summaries.push(eventType+": failed");
+      } else {
+        const channels = data?.notifications || {};
+        summaries.push(eventType+": email "+String(channels.email||"unknown")+", WhatsApp "+String(channels.whatsapp||"unknown"));
+      }
+    }
+    setOrderBusyId("");
+    setNotice("Notification check finished. "+summaries.join(" · "));
+  };
   const adminUpdateOrder = async (orderId:string,status?:string,paymentStatus?:string) => {
     if (!db || !isAdmin) return;
     if (paymentStatus==="paid" && !window.confirm("Confirm that you have actually received and verified the customer's advance payment before marking this order as paid.")) return;
@@ -1569,6 +1590,7 @@ export default function App() {
                 {order.tracking_updated_at && <small>Last updated: {new Date(order.tracking_updated_at).toLocaleString("en-IN")}</small>}
               </div>}
               <div className="my-order-actions">
+                {isAdmin && <button className="btn light" type="button" disabled={busy} onClick={()=>void retryOrderNotifications(order.id,order.status,returnRequest?.id)}>{busy?"Checking alerts…":"Retry notifications"}</button>}
                 {order.shipping_awb && <button className="btn light" type="button" disabled={busy} onClick={()=>void refreshOrderTracking(order.id)}>{busy?"Refreshing…":"Refresh delivery status"}</button>}
                 {cancellable && <button className="btn light danger-outline" type="button" disabled={busy} onClick={()=>void cancelCustomerOrder(order.id)}>{busy?"Cancelling…":"Cancel order"}</button>}
                 {delivered && !order.is_test_order && !returnRequest && <button className="btn light" type="button" onClick={()=>{setReturnOrderId(returnOrderId===order.id?"":order.id);setReturnDetails("");}}>Request return</button>}
