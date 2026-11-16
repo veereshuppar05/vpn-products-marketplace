@@ -219,3 +219,7 @@ npm run dev
 ```
 
 The delivery-address state/district dropdown uses the [CodingMation India States & Districts dataset](https://github.com/CodingMation/indian-states-districts), distributed under the MIT License. Its license text is included at `src/data/INDIA_STATES_DISTRICTS_LICENSE.txt`. The directory should be checked periodically against the Government of India's [Local Government Directory](https://panchayat.gov.in/lgd/), which is maintained by the Ministry of Panchayati Raj.
+
+## Service enquiry form
+
+The five service cards link to a dedicated `/enquire?service=<service-slug>` form. Visitors may submit without signing in. The `supabase/service-enquiries.sql` migration creates the submissions table; public visitors can insert enquiries, while only shop administrators can read and update them. Administrators open the profile menu and choose **Service Enquiries** to review submissions, contact customers by phone/WhatsApp/email, and mark each enquiry as new, contacted or closed.
