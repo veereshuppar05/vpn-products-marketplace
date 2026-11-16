@@ -3983,3 +3983,47 @@ footer a:hover { color: var(--orange-dark); }
     margin-left: 0;
   }
 }
+
+
+/* Larger, colourful icons for the six service cards. */
+.services .service-icon {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  margin: 0 auto 2px;
+  border-radius: 15px;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 5px 13px #17345a12, inset 0 1px 0 #ffffffaa;
+}
+.services .service-card:nth-child(1) .service-icon {
+  background: linear-gradient(145deg, #e1efff, #a9ceff);
+}
+.services .service-card:nth-child(2) .service-icon {
+  background: linear-gradient(145deg, #e7e2ff, #c5b9ff);
+}
+.services .service-card:nth-child(3) .service-icon {
+  background: linear-gradient(145deg, #dcf8f0, #a3e8d4);
+}
+.services .service-card:nth-child(4) .service-icon {
+  background: linear-gradient(145deg, #fff0d9, #ffd39b);
+}
+.services .service-card:nth-child(5) .service-icon {
+  background: linear-gradient(145deg, #f1e5ff, #d8b9ff);
+}
+.services .service-card:nth-child(6) .service-icon {
+  background: linear-gradient(145deg, #ffe4e8, #ffb7c4);
+}
+@media (max-width: 480px) {
+  .services .service-icon {
+    align-self: center;
+    margin-left: auto;
+    margin-right: auto;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    font-size: 27px;
+  }
+}
