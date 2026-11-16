@@ -1425,7 +1425,21 @@ export default function App() {
     setOrderBusyId(orderId);
     const {data,error} = await db.functions.invoke("shiprocket",{body:{action:"cancel",orderId,reason:"Cancelled by customer"}});
     setOrderBusyId("");
-    if (error || data?.error) { setNotice(data?.error || error?.message || "Could not cancel this order."); return; }
+    let cancelErrorMessage = data?.error || "";
+    if (error && !cancelErrorMessage) {
+      const context = (error as any).context;
+      if (context && typeof context.clone === "function") {
+        try {
+          const responseBody = await context.clone().json();
+          cancelErrorMessage = responseBody?.error || responseBody?.message || "";
+          if (!cancelErrorMessage && responseBody?.detail) cancelErrorMessage = String(responseBody.detail);
+        } catch {
+          // Fall back to the Functions client message if the response is not JSON.
+        }
+      }
+      cancelErrorMessage ||= error.message || "";
+    }
+    if (error || data?.error) { setNotice(cancelErrorMessage || "Could not cancel this order. Please try again."); return; }
     setNotice("Order cancelled successfully.");
     void notifyOrderEvent("order_cancelled",orderId);
     await loadCommerceData(user);
