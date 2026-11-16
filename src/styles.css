@@ -7290,3 +7290,158 @@ footer a:hover { color: var(--orange-dark); }
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* Make the homepage Recently Added Products row denser without changing product/category detail pages. */
+.recent-products-section.section {
+  margin: 18px auto 26px !important;
+  padding-left: clamp(18px, 3.2vw, 48px) !important;
+  padding-right: clamp(18px, 3.2vw, 48px) !important;
+}
+.recent-products-section .section-title {
+  margin-bottom: 8px !important;
+}
+.recent-products-section .section-title .eyebrow {
+  font-size: 10px !important;
+  letter-spacing: 1.1px !important;
+}
+.recent-products-section .section-title h2 {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  margin: 3px 0 4px !important;
+}
+.recent-products-section .section-title p {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+.recent-products-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  align-items: start !important;
+  gap: 9px !important;
+}
+.recent-products-grid .product {
+  height: auto !important;
+  min-height: 0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(16,43,98,.05) !important;
+}
+.recent-products-grid .product-gallery {
+  padding: 5px !important;
+}
+.recent-products-grid .product-main-image {
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
+  border-radius: 6px !important;
+}
+.recent-products-grid .product-body {
+  display: flex !important;
+  flex: 0 1 auto !important;
+  gap: 4px !important;
+  padding: 7px 8px 8px !important;
+}
+.recent-products-grid .product-body small {
+  min-height: 20px !important;
+  font-size: 8px !important;
+  line-height: 1.25 !important;
+}
+.recent-products-grid .product h3 {
+  min-height: 28px !important;
+  margin: 1px 0 2px !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+.recent-products-grid .product strong {
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+.recent-products-grid .product p {
+  margin: 1px 0 !important;
+  font-size: 9px !important;
+  line-height: 1.3 !important;
+}
+.recent-products-grid .product-buy-actions {
+  margin-top: 5px !important;
+  padding-top: 0 !important;
+  gap: 5px !important;
+}
+.recent-products-grid .product-buy-actions > button {
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 3px !important;
+  border-radius: 7px !important;
+  font-size: 9px !important;
+}
+.recent-products-grid .contact-seller-link {
+  margin-top: 3px !important;
+  font-size: 9px !important;
+}
+.recent-products-grid .stock-badge {
+  margin: 3px 0 0 !important;
+  padding: 3px 6px !important;
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+}
+.recent-products-grid .demo-tag {
+  margin-top: 3px !important;
+  padding: 4px 5px !important;
+  border-radius: 6px !important;
+  font-size: 8px !important;
+  line-height: 1.25 !important;
+}
+.recent-products-grid .recent-view-all-tile {
+  min-height: 0 !important;
+  align-self: stretch !important;
+  padding: 10px 7px !important;
+  gap: 7px !important;
+  border-radius: 10px !important;
+}
+.recent-products-grid .recent-view-all-arrow {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 20px !important;
+}
+.recent-products-grid .recent-view-all-tile b {
+  font-size: 11px !important;
+}
+.recent-products-grid .recent-view-all-tile small {
+  font-size: 9px !important;
+}
+
+@media (max-width: 1250px) {
+  .recent-products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 950px) {
+  .recent-products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 680px) {
+  .recent-products-section.section {
+    margin: 16px auto 22px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .recent-products-section .section-title h2 { font-size: 19px !important; }
+  .recent-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .recent-products-grid .product-main-image {
+    height: 100px !important;
+    min-height: 100px !important;
+    max-height: 100px !important;
+  }
+  .recent-products-grid .product-body { padding: 7px !important; }
+  .recent-products-grid .product h3 { font-size: 10.5px !important; }
+  .recent-products-grid .product strong { font-size: 14px !important; }
+  .recent-products-grid .product-buy-actions > button {
+    height: 31px !important;
+    min-height: 31px !important;
+    max-height: 31px !important;
+    font-size: 8.5px !important;
+  }
+  .recent-products-grid .recent-view-all-tile { min-height: 160px !important; }
+}
+@media (max-width: 360px) {
+  .recent-products-grid { grid-template-columns: 1fr !important; }
+}
