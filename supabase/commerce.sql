@@ -27,6 +27,7 @@ create table if not exists public.cart_items (
   user_id uuid not null references auth.users(id) on delete cascade,
   item_key text not null check (char_length(item_key) between 1 and 160),
   item_snapshot jsonb not null check (jsonb_typeof(item_snapshot) = 'object'),
+  quantity smallint not null default 1 check (quantity between 1 and 99),
   created_at timestamptz not null default now(),
   unique(user_id, item_key)
 );
@@ -53,7 +54,7 @@ create table if not exists public.marketplace_order_items (
   category text not null default '',
   condition text not null default '',
   unit_price numeric(12,2) not null check (unit_price > 0),
-  quantity smallint not null default 1 check (quantity = 1),
+  quantity smallint not null default 1 check (quantity between 1 and 99),
   seller_name text not null default '',
   image_url text not null default '',
   manual_verification boolean not null default false
@@ -233,3 +234,5 @@ $$;
 
 revoke all on function public.create_marketplace_order(uuid, jsonb) from public;
 grant execute on function public.create_marketplace_order(uuid, jsonb) to authenticated;
+
+NOTIFY pgrst, 'reload schema';
