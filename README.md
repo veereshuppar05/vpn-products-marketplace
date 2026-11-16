@@ -34,19 +34,47 @@ Online payments, escrow and in-app chat are not included. Checkout submits a pre
 New customer accounts and sign-ins both use an email address and password. Phone number is not accepted as a login identifier. SMS provider configuration is not required for authentication.
 
 ## Supabase setup
-1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
-2. Run `supabase/commerce.sql` in Supabase SQL Editor to create the cart, customer address and order-request tables and checkout function.
-3. Run `supabase/address-district.sql` in Supabase SQL Editor to add the district field to existing saved delivery addresses.
-4. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
-5. Run `supabase/shipping-integration.sql` in Supabase SQL Editor to add parcel dimensions, secure Shiprocket quotes and shipping fields to marketplace orders.
-6. Run `supabase/prepaid-only.sql` in Supabase SQL Editor to enforce prepaid-only payment method and reject COD statuses.
-7. Run `supabase/order-lifecycle.sql` in Supabase SQL Editor to enable customer cancellation, return requests and tracking metadata.
-8. Run `supabase/seed-one-rupee-test-product.sql` in Supabase SQL Editor to create the clearly labelled ₹1 checkout/cancellation test listing. First make sure your shop account has `profiles.is_admin=true`.
-9. Set these environment variables in Cloudflare Pages:
-   - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
-   - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
-5. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
-7. First account: obtain its UUID from Authentication > Users, then set `profiles.is_admin=true` for that UUID in SQL Editor. Admins can approve listings by changing `listings.status` to `active`.
+
+Run the SQL files below in the same Supabase SQL Editor, one at a time and in this order. Wait for each query to succeed before running the next.
+
+1. `supabase/schema.sql` — already completed in the current project; do not rerun it.
+2. `supabase/commerce.sql` — cart, customer addresses, orders and the original order function.
+3. `supabase/address-district.sql` — district selector support for saved addresses.
+4. `supabase/cart-quantity.sql` — multiple quantities in the cart.
+5. `supabase/shipping-integration.sql` — package dimensions, courier quotes, shipping metadata and the current order function.
+6. `supabase/prepaid-only.sql` — database enforcement of prepaid-only payment.
+7. `supabase/order-lifecycle.sql` — My Orders cancellation, return-request and tracking fields.
+
+### Prepare the shop admin account and ₹1 test listing
+
+The account that owns the shop listing must have `profiles.is_admin=true`.
+
+First find the account UUID in SQL Editor:
+
+```sql
+select id, email from auth.users order by created_at;
+```
+
+Then set the UUID belonging to your shop/admin login:
+
+```sql
+update public.profiles
+set is_admin = true
+where id = '<your-shop-account-uuid>';
+```
+
+Finally run `supabase/seed-one-rupee-test-product.sql` once. It creates an active listing named **VPN ₹1 Checkout Test Product**. It is a test-only item: its checkout uses a zero-fee test quote, it cannot be shipped or returned, and it should be cancelled from My Orders after testing.
+
+Use a separate customer account to buy the test listing. A seller cannot order their own listing.
+
+### Cloudflare Pages environment
+
+Set these two frontend environment variables in Cloudflare Pages:
+
+- `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API).
+- `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`.
+
+Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings. The shop account needs admin status to access all orders and the order-processing controls.
 
 ## Shiprocket setup
 
