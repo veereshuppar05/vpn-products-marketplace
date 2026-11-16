@@ -16,7 +16,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Public product image storage with seller-scoped upload policies
 - Demo products are shown when Supabase variables are not configured
 
-Online payments, escrow, in-app chat, OTP login, identity verification, and a full admin dashboard are not included. Checkout submits an order request only; seller availability, delivery charges and payment arrangements must be confirmed separately.
+Online payments, escrow, in-app chat, OTP login, identity verification, and a full admin dashboard are not included. Checkout submits an order request only; it does not automatically notify sellers or collect payments. The customer can send the order reference to the business on WhatsApp for manual confirmation.
 
 ## Supabase setup
 1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
