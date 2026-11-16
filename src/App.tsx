@@ -1471,8 +1471,9 @@ export default function App() {
               <h2>Order Summary</h2>
               <div className="cart-summary-row"><span>Products ({checkoutItems.length})</span><b>{money(checkoutSubtotal)}</b></div>
               <div className="cart-summary-row"><span>Delivery · {selectedShippingQuote?.courier_name || "Courier not selected"}</span><b>{selectedShippingQuote?money(selectedShippingQuote.rate):"Not selected"}</b></div>
+              <div className="cart-summary-row"><span>Payment method</span><b>Prepaid only</b></div>
               <div className="cart-summary-total"><span>Estimated total</span><strong>{money(orderGrandTotal)}</strong></div>
-              <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. The selected Shiprocket delivery rate is an estimate based on saved packed dimensions. Final packing, availability and payment are confirmed before the shipment is booked. No online payment is collected on this website.</p>
+              <p className="commerce-note commerce-important-note">Prepaid orders only. Cash on Delivery (COD) is not available. This submits an order request; our team will confirm availability and share advance-payment instructions. Payment must be received and verified before a Shiprocket shipment is booked. This website does not collect online payments yet.</p>
               <button className="btn primary full cart-page-checkout" type="button" disabled={commerceSaving || !chosenAddress || checkoutItems.length===0} onClick={()=>void placeOrderRequest()}>{commerceSaving?"Submitting order request…":"Place order request"}</button>
             </aside>
           </div>
@@ -1481,10 +1482,10 @@ export default function App() {
           <span className="commerce-success-mark" aria-hidden="true">✓</span>
           <span className="eyebrow commerce-eyebrow">REQUEST SUBMITTED</span>
           <h1>Thank you for your order request!</h1>
-          <p>Your order request is saved as pending confirmation. For demo listings, the seller must confirm the actual product, availability and price. Delivery charges and payment arrangements must also be confirmed before the sale is finalised.</p>
+          <p>Your prepaid order request is awaiting confirmation. Our team will confirm product availability and share advance-payment instructions. The order will be dispatched only after payment is received and verified. Cash on Delivery (COD) is not available.</p>
           {completedOrderId && <div className="commerce-order-reference">Order request ID <b>{completedOrderId}</b></div>}
            {selectedShippingQuote && <div className="commerce-review-address"><b>Selected delivery service</b><strong>{selectedShippingQuote.courier_name}</strong><span>Estimated delivery fee: {money(selectedShippingQuote.rate)}</span><span>Estimated order total: {money(orderGrandTotal)}</span><small>Courier booking will happen after the shop confirms your order and payment.</small></div>}
-          <p className="commerce-note">No online payment has been taken. For quickest follow-up, send this request reference to our team on WhatsApp.</p>
+          <p className="commerce-note">No online payment has been collected on this website yet. Contact our team on WhatsApp for advance-payment instructions. Dispatch happens only after payment confirmation; COD is not accepted.</p>
           <a className="btn primary commerce-whatsapp-followup" href={"https://wa.me/919916140898?text="+encodeURIComponent("Hello VPN Products and Services, please confirm my order request "+completedOrderId+".")} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp</a>
           <button className="btn light" type="button" onClick={closeCartPanel}>Continue shopping</button>
         </div>}
