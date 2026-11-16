@@ -15,6 +15,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Saved delivery addresses with default address selection
 - Checkout with saved address selection, order review and order-request confirmation
 - Shiprocket courier serviceability and delivery-rate quotes, with the selected courier and fee saved on the order
+- Prepaid orders only; Cash on Delivery (COD) is not supported, and shipments are booked only after payment is verified
 - Single Shiprocket pickup location at the VPN Products and Services shop
 - Server-side Shiprocket shipment-booking and AWB-tracking actions
 - Parcel weight and packed dimensions captured when a seller creates a listing
@@ -35,6 +36,7 @@ New customer accounts and sign-ins both use an email address and password. Phone
 3. Run `supabase/address-district.sql` in Supabase SQL Editor to add the district field to existing saved delivery addresses.
 4. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
 5. Run `supabase/shipping-integration.sql` in Supabase SQL Editor to add parcel dimensions, secure Shiprocket quotes and shipping fields to marketplace orders.
+6. Run `supabase/prepaid-only.sql` in Supabase SQL Editor to enforce prepaid-only payment method and reject COD statuses.
 4. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
@@ -76,6 +78,10 @@ New listings require packed weight (kg) and package length, breadth and height (
 - `package_height_cm`
 
 Courier estimates are not returned for products without these values. For multi-item carts, the quote calculation sums packed weight and stacks package heights using the largest length and breadth as an estimate. Confirm the final parcel dimensions when the order is physically packed; courier charges may change.
+
+### Prepaid payment policy
+
+Cash on Delivery is not offered. Checkout submits an order request and shows the estimated Shiprocket delivery fee; the website does not yet collect money online. The shop confirms availability and shares advance-payment instructions outside the website. Dispatch and Shiprocket booking happen only after the prepaid amount is received and verified. The database allows only `payment_method = 'prepaid'` and `payment_status` values `pending` or `paid`.
 
 ### 4. How order fulfilment works
 
