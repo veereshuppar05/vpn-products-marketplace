@@ -1014,11 +1014,22 @@ export default function App() {
             <h3>{item.title}</h3>
             <strong>{money(item.price)}</strong>
             <p>⌖ {item.city}, {item.state}</p>
-            <button
-              className="btn primary contact buy-button"
-              onClick={event=>{event.stopPropagation();buyItem(item);}}
-            >{user ? "Buy / Contact Seller" : "Login to Buy"}</button>
-            {!item.contact_phone && <span className="demo-tag">Demo product · sample listing · seller contact unavailable</span>}
+            <div className="product-buy-actions">
+              <button
+                type="button"
+                className="btn light product-cart-button"
+                disabled={isPreviewProduct(item)}
+                onClick={event=>{event.stopPropagation();void addToCart(item);}}
+              >＋ Add to Cart</button>
+              <button
+                type="button"
+                className="btn primary buy-button"
+                disabled={isPreviewProduct(item)}
+                onClick={event=>{event.stopPropagation();void buyNow(item);}}
+              >Buy Now</button>
+            </div>
+            {item.contact_phone && <button type="button" className="contact-seller-link" onClick={event=>{event.stopPropagation();buyItem(item);}}>Contact seller on WhatsApp →</button>}
+            {isPreviewProduct(item) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
           </div>
         </article>
       ))}
@@ -1041,7 +1052,7 @@ export default function App() {
   const displayName = user?.user_metadata?.full_name?.trim() || user?.email?.split("@")[0] || user?.phone || "User";
 
   return <div className="site">
-    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
+    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCart} aria-label={"Shopping cart with "+cartItems.length+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 1.9-1.4L22 8H6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg>{cartItems.length>0 && <span className="cart-count">{cartItems.length}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
         <button type="button" className="profile-icon-button" aria-label={"Open profile menu for "+displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={()=>setProfileMenuOpen(value=>!value)}>
           {user.user_metadata?.avatar_url ? <img className="profile-avatar profile-avatar-image" src={user.user_metadata.avatar_url} alt="" /> : <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>}
         </button>
@@ -1122,7 +1133,12 @@ export default function App() {
             <div className="detail-price">{money(selectedProduct.price)}</div>
             <span className="detail-condition">{selectedProduct.condition}</span>
             <p className="detail-location">⌖ {selectedProduct.city}, {selectedProduct.state}</p>
-            <button className="btn primary detail-buy-button" onClick={()=>buyItem(selectedProduct)}>{user ? "Buy / Contact Seller" : "Login to Buy"}</button>
+            <div className="detail-buy-actions">
+              <button className="btn light detail-cart-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void addToCart(selectedProduct)}>＋ Add to Cart</button>
+              <button className="btn primary detail-buy-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void buyNow(selectedProduct)}>Buy Now</button>
+            </div>
+            {selectedProduct.contact_phone && <button type="button" className="contact-seller-link" onClick={()=>buyItem(selectedProduct)}>Contact seller on WhatsApp →</button>}
+            {isPreviewProduct(selectedProduct) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
             <div className="detail-condition-note">
               <b>Condition and inspection notes</b>
               <p>{selectedProduct.id==="samsung-galaxy-a12-6gb-128gb"
