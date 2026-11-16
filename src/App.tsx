@@ -302,7 +302,7 @@ export default function App() {
   const [enquiryForm,setEnquiryForm] = useState({fullName:"",phone:"",email:"",details:"",preferredContact:"whatsapp" as "whatsapp"|"phone"|"email"});
   const [enquirySubmitting,setEnquirySubmitting] = useState(false);
   const [enquirySuccessId,setEnquirySuccessId] = useState("");
-  const [showServiceEnquiriesPage,setShowServiceEnquiriesPage] = useState(false);
+  const [showServiceEnquiriesPage,setShowServiceEnquiriesPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/admin/service-enquiries");
   const [serviceEnquiries,setServiceEnquiries] = useState<ServiceEnquiry[]>([]);
   const [serviceEnquiriesLoading,setServiceEnquiriesLoading] = useState(false);
   const [serviceEnquiryBusyId,setServiceEnquiryBusyId] = useState("");
@@ -447,6 +447,10 @@ export default function App() {
       setShowOrdersPage(false);
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (showServiceEnquiriesPage && user?.id && isAdmin) void loadServiceEnquiries();
+  }, [showServiceEnquiriesPage,user?.id,isAdmin]);
 
   useEffect(() => {
     if (!db) return;
@@ -651,7 +655,6 @@ export default function App() {
     setShowServiceEnquiryPage(false);
     setShowOrdersPage(false);
     setShowCartPage(false);
-    await loadServiceEnquiries();
     window.scrollTo({top:0,behavior:"smooth"});
   };
   const updateServiceEnquiryStatus = async (enquiryId:string,status:"contacted"|"closed") => {
