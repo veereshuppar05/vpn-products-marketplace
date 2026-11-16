@@ -21,7 +21,8 @@ Online payments, escrow, in-app chat, OTP login, identity verification, and a fu
 ## Supabase setup
 1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
 2. Run `supabase/commerce.sql` in Supabase SQL Editor to create the cart, customer address and order-request tables and checkout function.
-3. Set these environment variables in Cloudflare Pages:
+3. Run `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals and the demo low-stock quantity limit.
+4. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
 3. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
