@@ -142,9 +142,10 @@ begin
     raise exception 'Select a saved delivery address or add a new one';
   end if;
 
-  if jsonb_typeof(p_items) is distinct from 'array'
-     or jsonb_array_length(p_items) < 1
-     or jsonb_array_length(p_items) > 20 then
+  if jsonb_typeof(p_items) is distinct from 'array' then
+    raise exception 'Your cart must contain a valid item list';
+  end if;
+  if jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 20 then
     raise exception 'Your cart must contain between 1 and 20 items';
   end if;
 
@@ -162,7 +163,8 @@ begin
              coalesce(l.image_urls->>0, '')
         into v_title, v_category, v_condition, v_seller_name, v_price, v_image_url
       from public.listings l
-      where l.id = v_listing_id and l.status = 'active' and l.seller_id <> v_user_id;
+      where l.id = v_listing_id and l.status = 'active' and l.seller_id <> v_user_id
+      for update;
       if not found then
         raise exception 'A product in your cart is no longer available';
       end if;
