@@ -1331,7 +1331,7 @@ export default function App() {
         {checkoutStep==="address" && <>
           <div className="cart-page-heading">
             <span className="eyebrow">CHECKOUT · STEP 1 OF 2</span>
-            <h1>Select delivery address</h1>
+            <h1 className="checkout-address-title">Select delivery address</h1>
             <p>Choose where you want your order delivered, or add a new address.</p>
           </div>
           <div className="cart-checkout-layout">
