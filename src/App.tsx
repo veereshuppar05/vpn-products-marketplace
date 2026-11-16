@@ -64,6 +64,8 @@ const DEMO_PREVIEW_STOCK_BY_ID:Record<string,number> = {
 const MAX_CART_QUANTITY = 99;
 const getCartQuantity = (item:Listing) => Math.max(1,Math.min(MAX_CART_QUANTITY,Number(item.quantity)||1));
 const getStockForDisplay = (item:Listing) => {
+  // The ₹1 test listing is deliberately limited to one item per test order.
+  if (item.is_test_product) return 1;
   const suppliedStock = Number(item.stock);
   if (Number.isInteger(suppliedStock) && suppliedStock>=0) return suppliedStock;
   if (isPreviewProduct(item)) return DEMO_PREVIEW_STOCK_BY_ID[item.id] ?? 5;
