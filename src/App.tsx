@@ -5,6 +5,7 @@ type Listing = {
   id: string; title: string; description: string; price: number; category: string;
   condition: string; city: string; state: string; contact_phone: string;
   seller_name: string; image_urls: string[]; status: string; created_at: string;
+  quantity?: number; stock?: number;
 };
 type CustomerAddress = {
   id: string; full_name: string; phone: string; pincode: string;
@@ -22,6 +23,21 @@ const emptyAddressDraft:AddressDraft = {
   landmark:"",city:"",state:"Karnataka",address_type:"Home",is_default:false
 };
 const isPreviewProduct = (item:Listing) => item.id.startsWith("demo-") || item.id.startsWith("sample-");
+const DEMO_PREVIEW_STOCK = 2;
+const MAX_CART_QUANTITY = 99;
+const getCartQuantity = (item:Listing) => Math.max(1,Math.min(MAX_CART_QUANTITY,Number(item.quantity)||1));
+const getCartStockLimit = (item:Listing) => {
+  if (isPreviewProduct(item)) return DEMO_PREVIEW_STOCK;
+  const stock = Number(item.stock);
+  return Number.isInteger(stock) && stock>=0 ? Math.min(stock,MAX_CART_QUANTITY) : MAX_CART_QUANTITY;
+};
+const getStockMessage = (item:Listing) => {
+  if (isPreviewProduct(item)) return "Only 2 left";
+  const stock = Number(item.stock);
+  if (!Number.isInteger(stock)) return "";
+  if (stock===0) return "Out of stock";
+  return stock>0 && stock<10 ? "Only "+stock+" left" : "";
+};
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined;
 const db: SupabaseClient | null = url && key ? createClient(url, key) : null;
@@ -276,13 +292,13 @@ export default function App() {
       return;
     }
     const [cartResult,addressResult] = await Promise.all([
-      db.from("cart_items").select("item_key,item_snapshot").eq("user_id",sessionUser.id).order("created_at",{ascending:true}),
+      db.from("cart_items").select("item_key,item_snapshot,quantity").eq("user_id",sessionUser.id).order("created_at",{ascending:true}),
       db.from("customer_addresses").select("*").eq("user_id",sessionUser.id).order("is_default",{ascending:false}).order("created_at",{ascending:false})
     ]);
     if (cartResult.error) {
       setNotice("Cart setup needs the Supabase commerce SQL migration. " + cartResult.error.message);
     } else {
-      setCartItems((cartResult.data || []).map((row:any)=>({...row.item_snapshot,id:row.item_key}) as Listing));
+      setCartItems((cartResult.data || []).map((row:any)=>({...row.item_snapshot,id:row.item_key,quantity:Number(row.quantity)||1}) as Listing));
     }
     if (addressResult.error) {
       setNotice("Address setup needs the Supabase commerce SQL migration. " + addressResult.error.message);
@@ -828,11 +844,31 @@ export default function App() {
     setNotice("Please sign in or create an account to use the shopping cart and checkout.");
     setAuthOpen(true);
   };
-  const persistCartItem = async (item:Listing,showMessage=true):Promise<boolean> => {
+  const persistCartItem = async (item:Listing,showMessage=true,incrementIfExists=true):Promise<boolean> => {
     if (!user) { requireLoginForCommerce(); return false; }
     if (!db) { setNotice("Cart is unavailable because the Supabase connection is not configured."); return false; }
-    if (cartItems.some(current=>current.id===item.id)) {
-      if (showMessage) setNotice("This product is already in your cart.");
+    const existing = cartItems.find(current=>current.id===item.id);
+    const currentQuantity = existing ? getCartQuantity(existing) : 0;
+    const stockLimit = getCartStockLimit(item);
+    if (stockLimit===0) {
+      setNotice("This product is currently out of stock.");
+      return false;
+    }
+    if (existing) {
+      if (!incrementIfExists) return true;
+      if (currentQuantity>=stockLimit) {
+        setNotice(isPreviewProduct(item) ? "Only 2 left in this demo product." : "You have reached the available stock for this product.");
+        return true;
+      }
+      const nextQuantity=currentQuantity+1;
+      const {error} = await db.from("cart_items").update({quantity:nextQuantity})
+        .eq("user_id",user.id).eq("item_key",item.id);
+      if (error) {
+        setNotice("Could not update the cart quantity. Run supabase/cart-quantity.sql in Supabase SQL Editor. " + error.message);
+        return false;
+      }
+      setCartItems(current=>current.map(currentItem=>currentItem.id===item.id?{...currentItem,quantity:nextQuantity}:currentItem));
+      if (showMessage) setNotice("Quantity updated to "+nextQuantity+".");
       return true;
     }
     const snapshot = {
@@ -841,18 +877,18 @@ export default function App() {
       seller_name:item.seller_name,image_urls:item.image_urls || []
     };
     const {error} = await db.from("cart_items").upsert({
-      user_id:user.id,item_key:item.id,item_snapshot:snapshot
+      user_id:user.id,item_key:item.id,item_snapshot:snapshot,quantity:1
     },{onConflict:"user_id,item_key"});
     if (error) {
-      setNotice("Could not save this item to your cart. Run supabase/commerce.sql in Supabase SQL Editor. " + error.message);
+      setNotice("Could not save this item to your cart. Run supabase/cart-quantity.sql in Supabase SQL Editor. " + error.message);
       return false;
     }
-    setCartItems(current=>current.some(existing=>existing.id===item.id)?current:[...current,item]);
+    setCartItems(current=>current.some(currentItem=>currentItem.id===item.id)?current:[...current,{...item,quantity:1}]);
     if (showMessage) setNotice("Added to your cart.");
     return true;
   };
   const addToCart = async (item:Listing) => {
-    await persistCartItem(item,true);
+    await persistCartItem(item,true,true);
   };
   const openCartPage = () => {
     if (!user) { requireLoginForCommerce(); return; }
@@ -893,7 +929,7 @@ export default function App() {
   };
   const buyNow = async (item:Listing) => {
     if (!user) { requireLoginForCommerce(); return; }
-    const saved = await persistCartItem(item,false);
+    const saved = await persistCartItem(item,false,false);
     if (!saved) return;
     if (!showCartPage) {
       const returnTo = window.location.pathname + window.location.search + window.location.hash;
@@ -910,6 +946,29 @@ export default function App() {
       ? current : addresses.find(address=>address.is_default)?.id || addresses[0]?.id || "");
     setAddressFormOpen(addresses.length===0);
     window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const changeCartQuantity = async (itemId:string,delta:-1|1) => {
+    if (!db || !user) return;
+    const item=cartItems.find(current=>current.id===itemId);
+    if (!item) return;
+    const currentQuantity=getCartQuantity(item);
+    const nextQuantity=currentQuantity+delta;
+    const stockLimit=getCartStockLimit(item);
+    if (nextQuantity<1) {
+      setNotice("Use Remove to delete this product from your cart.");
+      return;
+    }
+    if (nextQuantity>stockLimit) {
+      setNotice(isPreviewProduct(item) ? "Only 2 left in this demo product." : "You have reached the available stock for this product.");
+      return;
+    }
+    const {error}=await db.from("cart_items").update({quantity:nextQuantity})
+      .eq("user_id",user.id).eq("item_key",itemId);
+    if(error) {
+      setNotice("Could not update the quantity. Run supabase/cart-quantity.sql in Supabase SQL Editor. "+error.message);
+      return;
+    }
+    setCartItems(current=>current.map(currentItem=>currentItem.id===itemId?{...currentItem,quantity:nextQuantity}:currentItem));
   };
   const removeCartItem = async (itemId:string) => {
     if (!db || !user) return;
@@ -1005,7 +1064,7 @@ export default function App() {
     const {data,error} = await db.rpc("create_marketplace_order",{
       p_address_id:address.id,
       p_items:orderItems.map(item=>({
-        id:item.id,title:item.title,price:Number(item.price),category:item.category,
+        id:item.id,title:item.title,price:Number(item.price),quantity:getCartQuantity(item),category:item.category,
         condition:item.condition,seller_name:item.seller_name,image_urls:item.image_urls || []
       }))
     });
@@ -1023,7 +1082,9 @@ export default function App() {
     setCheckoutItemIds([]);
   };
   const checkoutItems = cartItems.filter(item=>checkoutItemIds.includes(item.id));
-  const checkoutSubtotal = checkoutItems.reduce((total,item)=>total+Number(item.price || 0),0);
+  const checkoutSubtotal = checkoutItems.reduce((total,item)=>total+Number(item.price || 0)*getCartQuantity(item),0);
+  const cartQuantityCount = cartItems.reduce((total,item)=>total+getCartQuantity(item),0);
+  const cartSubtotal = cartItems.reduce((total,item)=>total+Number(item.price || 0)*getCartQuantity(item),0);
   const chosenAddress = addresses.find(address=>address.id===selectedAddressId) || null;
 
   const renderProductCards = (listings:Listing[],compact=false) => listings.length ? (
@@ -1074,6 +1135,7 @@ export default function App() {
               ><span className="purchase-button-label">Buy Now</span></button>
             </div>
             {item.contact_phone && <button type="button" className="contact-seller-link" onClick={event=>{event.stopPropagation();buyItem(item);}}>Contact seller on WhatsApp →</button>}
+            {getStockMessage(item) && <span className="stock-badge">{getStockMessage(item)}</span>}
             {isPreviewProduct(item) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
           </div>
         </article>
@@ -1097,7 +1159,7 @@ export default function App() {
   const displayName = user?.user_metadata?.full_name?.trim() || user?.email?.split("@")[0] || user?.phone || "User";
 
   return <div className="site">
-    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCartPage} aria-label={"Shopping cart with "+cartItems.length+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 3.5h2.2l2.1 11.1c.15.8.83 1.4 1.65 1.4h9.2c.75 0 1.4-.48 1.62-1.2L21.5 7H6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 9.2h11.8l-1.15 4.5H8.85L8 9.2Z" fill="currentColor" opacity=".18"/><circle cx="9.7" cy="19.2" r="1.65" fill="currentColor"/><circle cx="18" cy="19.2" r="1.65" fill="currentColor"/></svg>{cartItems.length>0 && <span className="cart-count">{cartItems.length}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
+    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCartPage} aria-label={"Shopping cart with "+cartQuantityCount+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 3.5h2.2l2.1 11.1c.15.8.83 1.4 1.65 1.4h9.2c.75 0 1.4-.48 1.62-1.2L21.5 7H6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 9.2h11.8l-1.15 4.5H8.85L8 9.2Z" fill="currentColor" opacity=".18"/><circle cx="9.7" cy="19.2" r="1.65" fill="currentColor"/><circle cx="18" cy="19.2" r="1.65" fill="currentColor"/></svg>{cartQuantityCount>0 && <span className="cart-count">{cartQuantityCount}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
         <button type="button" className="profile-icon-button" aria-label={"Open profile menu for "+displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={()=>setProfileMenuOpen(value=>!value)}>
           {user.user_metadata?.avatar_url ? <img className="profile-avatar profile-avatar-image" src={user.user_metadata.avatar_url} alt="" /> : <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>}
         </button>
@@ -1132,7 +1194,7 @@ export default function App() {
           <div className="cart-page-heading">
             <span className="eyebrow">YOUR SHOPPING BAG</span>
             <h1>Shopping Cart</h1>
-            <p>{cartItems.length} {cartItems.length===1?"product":"products"} in your cart</p>
+            <p>{cartItems.length} {cartItems.length===1?"product":"products"} · {cartQuantityCount} {cartQuantityCount===1?"item":"items"} in your cart</p>
           </div>
           {!user ? <div className="cart-page-empty">
             <span className="cart-page-empty-icon" aria-hidden="true">♙</span>
@@ -1152,7 +1214,14 @@ export default function App() {
                   <b>{item.title}</b>
                   <small>{item.category} · {item.condition}</small>
                   <small>{item.city}, {item.state}</small>
-                  <strong>{money(Number(item.price))}</strong>
+                  <small>Unit price: {money(Number(item.price))}</small>
+                  <div className="cart-quantity-control" aria-label={"Quantity for "+item.title}>
+                    <button type="button" aria-label="Decrease quantity" disabled={getCartQuantity(item)<=1} onClick={()=>void changeCartQuantity(item.id,-1)}>−</button>
+                    <span>{getCartQuantity(item)}</span>
+                    <button type="button" aria-label="Increase quantity" disabled={getCartQuantity(item)>=getCartStockLimit(item)} onClick={()=>void changeCartQuantity(item.id,1)}>＋</button>
+                  </div>
+                  <strong>Item total: {money(Number(item.price)*getCartQuantity(item))}</strong>
+                  {getStockMessage(item) && <span className="stock-badge cart-stock-badge">{getStockMessage(item)}</span>}
                   <span className="cart-page-seller">Seller: {item.seller_name || "Marketplace seller"}</span>
                   {isPreviewProduct(item) && <span className="cart-preview-label">Demo preview · saved in cart only</span>}
                 </div>
@@ -1162,9 +1231,9 @@ export default function App() {
             </div>
             <aside className="cart-page-summary">
               <h2>Order Summary</h2>
-              <div className="cart-summary-row"><span>Items ({cartItems.length})</span><b>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</b></div>
+              <div className="cart-summary-row"><span>Items ({cartQuantityCount})</span><b>{money(cartSubtotal)}</b></div>
               <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
-              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</strong></div>
+              <div className="cart-summary-total"><span>Subtotal</span><strong>{money(cartSubtotal)}</strong></div>
               <p className="commerce-note">Delivery charges and final availability are confirmed by the seller. Demo preview products can be saved in your cart but are excluded from order requests.</p>
               <button className="btn primary full cart-page-checkout" type="button" disabled={cartItems.every(isPreviewProduct)} onClick={beginCartCheckout}>Proceed to checkout →</button>
               {cartItems.every(isPreviewProduct) && <small className="cart-preview-checkout-note">Add a live seller listing to continue to checkout.</small>}
@@ -1238,7 +1307,7 @@ export default function App() {
               </div>}
               <div className="commerce-review-items">
                 {checkoutItems.map(item=><div className="commerce-review-item" key={item.id}>
-                  <span>{item.title}</span><strong>{money(Number(item.price))}</strong>
+                  <span>{item.title} × {getCartQuantity(item)}</span><strong>{money(Number(item.price)*getCartQuantity(item))}</strong>
                 </div>)}
               </div>
             </div>
@@ -1314,8 +1383,9 @@ export default function App() {
             <div className="detail-price">{money(selectedProduct.price)}</div>
             <span className="detail-condition">{selectedProduct.condition}</span>
             <p className="detail-location">⌖ {selectedProduct.city}, {selectedProduct.state}</p>
+            {getStockMessage(selectedProduct) && <span className="stock-badge detail-stock-badge">{getStockMessage(selectedProduct)}</span>}
             <div className="detail-buy-actions">
-              <button className="btn light detail-cart-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void addToCart(selectedProduct)}><span className="purchase-button-label">Add to Cart</span></button>
+              <button className="btn light detail-cart-button" type="button" disabled={getCartStockLimit(selectedProduct)===0} onClick={()=>void addToCart(selectedProduct)}><span className="purchase-button-label">Add to Cart</span></button>
               <button className="btn primary detail-buy-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void buyNow(selectedProduct)}><span className="purchase-button-label">Buy Now</span></button>
             </div>
             {selectedProduct.contact_phone && <button type="button" className="contact-seller-link" onClick={()=>buyItem(selectedProduct)}>Contact seller on WhatsApp →</button>}
