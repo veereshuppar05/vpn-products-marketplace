@@ -6535,3 +6535,174 @@ footer a:hover { color: var(--orange-dark); }
 @media (max-width: 380px) {
   .feature-page-card-grid { grid-template-columns: 1fr !important; }
 }
+
+
+/* Fit all feature-page content in a normal desktop viewport without scrolling. */
+.feature-detail-page.section {
+  padding: 4px clamp(18px, 3.6vw, 48px) 8px !important;
+}
+.feature-page-back {
+  margin: 0 0 4px !important;
+  padding: 2px 0 !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+.feature-page-hero {
+  min-height: 148px !important;
+  gap: 14px !important;
+  padding: 13px 25px !important;
+  border-radius: 14px !important;
+}
+.feature-page-hero-copy h1 {
+  font-size: 21px !important;
+  line-height: 1.16 !important;
+  margin: 4px 0 5px !important;
+  max-width: 650px !important;
+}
+.feature-page-hero-copy p {
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+}
+.feature-page-hero-copy .eyebrow,
+.feature-page-section-heading .eyebrow,
+.feature-page-bottom-cta .eyebrow {
+  font-size: 9px !important;
+  letter-spacing: 1.05px !important;
+}
+.feature-page-actions {
+  gap: 7px !important;
+  margin-top: 9px !important;
+}
+.feature-page-actions .btn {
+  height: 33px !important;
+  min-height: 33px !important;
+  padding: 0 11px !important;
+  font-size: 10px !important;
+  border-radius: 8px !important;
+}
+.feature-page-hero-art {
+  min-height: 122px !important;
+}
+.feature-page-art-card {
+  width: 96px !important;
+  height: 96px !important;
+  border-radius: 23px !important;
+}
+.feature-page-art-card svg {
+  width: 68px !important;
+  height: 68px !important;
+}
+.feature-art-orbit { width: 132px !important; height: 132px !important; }
+.feature-art-orbit-two { width: 160px !important; height: 160px !important; }
+.feature-art-dot-one { top: 7px !important; right: 19% !important; }
+.feature-art-dot-two { bottom: 12px !important; left: 22% !important; }
+
+.feature-page-offerings {
+  margin-top: 9px !important;
+}
+.feature-page-section-heading {
+  margin-bottom: 7px !important;
+}
+.feature-page-section-heading h2 {
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+  margin: 2px 0 3px !important;
+}
+.feature-page-section-heading p {
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+}
+.feature-page-card-grid {
+  gap: 8px !important;
+}
+.feature-page-info-card {
+  min-height: 94px !important;
+  padding: 9px 11px !important;
+  border-radius: 10px !important;
+}
+.feature-page-card-number {
+  width: 23px !important;
+  height: 21px !important;
+  border-radius: 6px !important;
+  font-size: 8px !important;
+}
+.feature-page-info-card h3 {
+  font-size: 11.5px !important;
+  line-height: 1.2 !important;
+  margin: 6px 0 3px !important;
+}
+.feature-page-info-card p {
+  font-size: 9.5px !important;
+  line-height: 1.35 !important;
+}
+.feature-page-bottom-cta {
+  margin-top: 8px !important;
+  padding: 9px 13px !important;
+  gap: 12px !important;
+  border-radius: 10px !important;
+}
+.feature-page-bottom-cta h2 {
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+  margin: 2px 0 !important;
+}
+.feature-page-bottom-cta p {
+  font-size: 9.5px !important;
+  line-height: 1.3 !important;
+}
+.feature-page-bottom-cta .feature-page-actions {
+  gap: 8px !important;
+}
+.feature-page-call-link { font-size: 10px !important; }
+
+@media (max-height: 820px) and (min-width: 681px) {
+  .feature-detail-page.section { padding-top: 2px !important; padding-bottom: 5px !important; }
+  .feature-page-back { margin-bottom: 2px !important; }
+  .feature-page-hero { min-height: 132px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
+  .feature-page-hero-art { min-height: 106px !important; }
+  .feature-page-art-card { width: 84px !important; height: 84px !important; }
+  .feature-page-art-card svg { width: 60px !important; height: 60px !important; }
+  .feature-art-orbit { width: 116px !important; height: 116px !important; }
+  .feature-art-orbit-two { width: 140px !important; height: 140px !important; }
+  .feature-page-offerings { margin-top: 7px !important; }
+  .feature-page-section-heading { margin-bottom: 5px !important; }
+  .feature-page-info-card { min-height: 82px !important; padding: 7px 9px !important; }
+  .feature-page-info-card h3 { margin-top: 4px !important; }
+  .feature-page-bottom-cta { margin-top: 6px !important; padding: 7px 11px !important; }
+}
+@media (max-width: 1000px) {
+  .feature-page-hero { min-height: 138px !important; padding: 13px 17px !important; }
+  .feature-page-hero-copy h1 { font-size: 20px !important; }
+  .feature-page-hero-art { min-height: 112px !important; }
+  .feature-page-art-card { width: 88px !important; height: 88px !important; }
+  .feature-page-art-card svg { width: 62px !important; height: 62px !important; }
+  .feature-art-orbit { width: 120px !important; height: 120px !important; }
+  .feature-art-orbit-two { width: 148px !important; height: 148px !important; }
+  .feature-page-card-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width: 680px) {
+  .feature-detail-page.section { padding: 7px 12px 18px !important; }
+  .feature-page-hero {
+    grid-template-columns: minmax(0,1fr) !important;
+    min-height: 0 !important;
+    padding: 15px 13px 9px !important;
+    gap: 3px !important;
+  }
+  .feature-page-hero-copy h1 { font-size: 20px !important; }
+  .feature-page-hero-copy p { font-size: 11px !important; }
+  .feature-page-hero-art { min-height: 95px !important; }
+  .feature-page-art-card { width: 75px !important; height: 75px !important; }
+  .feature-page-art-card svg { width: 54px !important; height: 54px !important; }
+  .feature-art-orbit { width: 100px !important; height: 100px !important; }
+  .feature-art-orbit-two { width: 120px !important; height: 120px !important; }
+  .feature-page-offerings { margin-top: 11px !important; }
+  .feature-page-section-heading h2 { font-size: 16px !important; }
+  .feature-page-card-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 7px !important; }
+  .feature-page-info-card { min-height: 100px !important; padding: 9px !important; }
+  .feature-page-info-card h3 { font-size: 11px !important; }
+  .feature-page-info-card p { font-size: 9px !important; }
+  .feature-page-bottom-cta { align-items: flex-start !important; flex-direction: column !important; padding: 11px !important; }
+}
+@media (max-width: 380px) {
+  .feature-page-card-grid { grid-template-columns: 1fr !important; }
+}
