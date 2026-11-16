@@ -28,7 +28,7 @@ begin
     select 1
     from public.listings
     where seller_id = v_admin_id
-      and title = 'VPN Demo Product - Smart LED Desk Lamp'
+      and title = 'DEMO ONLY - Smart LED Desk Lamp'
   ) then
     raise notice 'The demo product already exists; no duplicate was added.';
     return;
