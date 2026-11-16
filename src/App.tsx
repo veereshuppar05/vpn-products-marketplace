@@ -689,8 +689,12 @@ export default function App() {
       setNotice("Please describe what you need (at least 10 characters).");
       return;
     }
+    if (enquiryForm.preferredContact==="email" && !enquiryForm.email.trim()) {
+      setNotice("Enter your email address or choose WhatsApp or phone as your preferred contact method.");
+      return;
+    }
     setEnquirySubmitting(true);
-    const {data,error} = await db.from("service_enquiries").insert({
+    const {error} = await db.from("service_enquiries").insert({
       user_id:user?.id || null,
       full_name:enquiryForm.fullName.trim(),
       phone:digits,
@@ -698,13 +702,13 @@ export default function App() {
       service:enquiryService,
       details:enquiryForm.details.trim(),
       preferred_contact:enquiryForm.preferredContact
-    }).select("id").single();
+    });
     setEnquirySubmitting(false);
     if (error) {
       setNotice("Your enquiry could not be submitted. "+error.message+" Please try again or contact us directly.");
       return;
     }
-    setEnquirySuccessId(String(data?.id || ""));
+    setEnquirySuccessId("submitted");
     setEnquiryForm(current=>({...current,details:""}));
     window.scrollTo({top:0,behavior:"smooth"});
   };
@@ -1730,7 +1734,7 @@ export default function App() {
               <div className="service-enquiry-contact"><b>Prefer to contact us directly?</b><a href="tel:+919916140898">Call +91 99161 40898</a><a href="https://wa.me/919916140898" target="_blank" rel="noopener noreferrer">Chat on WhatsApp →</a><a href="mailto:vpnproductsandservices@gmail.com">vpnproductsandservices@gmail.com</a></div>
             </aside>
           </div>
-        </> : <div className="service-enquiry-success"><span className="service-enquiry-success-mark">✓</span><span className="eyebrow">ENQUIRY RECEIVED</span><h1>Thank you, {enquiryForm.fullName.trim() || "we've received your enquiry"}!</h1><p>Your enquiry for <b>{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.title}</b> has been submitted successfully. Our team will contact you using your preferred method.</p>{enquirySuccessId && <small>Enquiry reference: #{enquirySuccessId.slice(0,8).toUpperCase()}</small>}<div className="service-enquiry-success-actions"><button className="btn primary" type="button" onClick={()=>openServiceEnquiry(enquiryService)}>Submit another enquiry</button><button className="btn light" type="button" onClick={backFromServiceEnquiry}>Back to services</button></div></div>}
+        </> : <div className="service-enquiry-success"><span className="service-enquiry-success-mark">✓</span><span className="eyebrow">ENQUIRY RECEIVED</span><h1>Thank you, {enquiryForm.fullName.trim() || "we've received your enquiry"}!</h1><p>Your enquiry for <b>{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.title}</b> has been submitted successfully. Our team will contact you using your preferred method.</p><small>Your enquiry has been saved. Please keep your phone available for our reply.</small><div className="service-enquiry-success-actions"><button className="btn primary" type="button" onClick={()=>openServiceEnquiry(enquiryService)}>Submit another enquiry</button><button className="btn light" type="button" onClick={backFromServiceEnquiry}>Back to services</button></div></div>}
       </section> : showOrdersPage ? <section className="my-orders-page section">
         <button type="button" className="cart-page-back" onClick={()=>setShowOrdersPage(false)}>← Continue shopping</button>
         <div className="cart-page-heading">
