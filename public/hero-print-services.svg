@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 520" fill="none">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0A3E91"/><stop offset=".58" stop-color="#0877E8"/><stop offset="1" stop-color="#20B9F3"/></linearGradient>
+    <linearGradient id="deep" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#263B5D"/><stop offset="1" stop-color="#08172F"/></linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#EAF2FC"/></linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFB14A"/><stop offset="1" stop-color="#F47721"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feGaussianBlur stdDeviation="12"/></filter>
+  </defs>
+  <ellipse cx="428" cy="470" rx="365" ry="25" fill="#648EBB" opacity=".22" filter="url(#shadow)"/>
+  <!-- Printer and paper feeder -->
+  <path d="M91 129Q91 88 133 88H386Q421 88 421 127V171H91Z" fill="url(#deep)" stroke="#071A36" stroke-width="8"/>
+  <path d="M125 94L185 38Q198 25 221 25H378Q397 25 397 45V94Z" fill="url(#blue)" stroke="#102C5A" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M185 38L375 38" stroke="#77C8FF" stroke-width="6" stroke-linecap="round" opacity=".7"/>
+  <path d="M76 150Q76 128 99 128H413Q439 128 439 155V354Q439 385 407 385H107Q76 385 76 354Z" fill="url(#paper)" stroke="#132A4F" stroke-width="10"/>
+  <path d="M82 158H432V222H82Z" fill="#D9E8F8"/>
+  <path d="M82 229H432V355Q432 379 406 379H107Q82 379 82 354Z" fill="url(#blue)"/>
+  <path d="M113 261H170M113 283H170M113 305H170" stroke="#0C397D" stroke-width="9" stroke-linecap="round" opacity=".65"/>
+  <rect x="275" y="153" width="147" height="76" rx="16" fill="url(#deep)" stroke="#071A36" stroke-width="8"/>
+  <rect x="288" y="166" width="76" height="46" rx="8" fill="#1A9EF0"/>
+  <circle cx="395" cy="190" r="13" fill="url(#orange)" stroke="#A94B0B" stroke-width="4"/>
+  <g fill="#B9D2EF"><rect x="372" y="164" width="15" height="10" rx="4"/><rect x="394" y="164" width="15" height="10" rx="4"/><rect x="372" y="181" width="15" height="10" rx="4"/><rect x="394" y="181" width="15" height="10" rx="4"/></g>
+  <path d="M205 319H376Q397 319 397 341V368H205Z" fill="#071D42" stroke="#0B2F68" stroke-width="5"/>
+  <path d="M222 317L361 288L385 356L244 385Z" fill="url(#paper)" stroke="#B5CDEB" stroke-width="4"/>
+  <path d="M252 333L350 313M260 349L359 329M269 366L367 345" stroke="#78A9E8" stroke-width="8" stroke-linecap="round"/>
+  <!-- Paper stack -->
+  <path d="M42 364L184 334L264 374L118 406Z" fill="#EAF3FF" stroke="#7CA9E3" stroke-width="4"/>
+  <path d="M42 379L184 349L264 389L118 421Z" fill="#D9E9FC" stroke="#7CA9E3" stroke-width="4"/>
+  <path d="M42 394L184 364L264 404L118 436Z" fill="url(#paper)" stroke="#7CA9E3" stroke-width="4"/>
+  <path d="M78 390L167 371M91 405L181 385" stroke="#83ADE4" stroke-width="7" stroke-linecap="round"/>
+  <!-- Laptop showing online form -->
+  <rect x="456" y="48" width="333" height="245" rx="24" fill="url(#deep)" stroke="#0B1B36" stroke-width="10"/>
+  <rect x="474" y="66" width="297" height="211" rx="13" fill="url(#blue)"/>
+  <rect x="496" y="86" width="252" height="42" rx="9" fill="#0757B8"/>
+  <text x="622" y="114" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="22" font-weight="700">ONLINE APPLICATION</text>
+  <rect x="500" y="142" width="244" height="112" rx="12" fill="url(#paper)"/>
+  <g stroke="#72A8E9" stroke-width="7" stroke-linecap="round"><path d="M550 170H708M550 201H719M550 232H672"/></g>
+  <g fill="#0B82E8"><rect x="515" y="158" width="23" height="23" rx="5"/><rect x="515" y="189" width="23" height="23" rx="5"/><rect x="515" y="220" width="23" height="23" rx="5"/></g>
+  <g stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M520 169L525 174L533 164M520 200L525 205L533 195"/></g>
+  <path d="M432 296H814L844 333Q851 342 835 348H411Q396 341 406 331Z" fill="#B5C8DF" stroke="#142C50" stroke-width="8"/>
+  <path d="M470 307H778L801 329H448Z" fill="#203B66"/>
+  <g stroke="#7396C5" stroke-width="3" opacity=".8"><path d="M490 315H752M480 323H765"/></g>
+  <!-- Application document cards -->
+  <g transform="rotate(-7 553 390)">
+    <rect x="468" y="330" width="133" height="158" rx="16" fill="url(#paper)" stroke="#1D3A68" stroke-width="7"/>
+    <rect x="481" y="344" width="107" height="35" rx="8" fill="#0867D5"/>
+    <text x="535" y="368" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="22" font-weight="700">PAN</text>
+    <path d="M490 397H575M490 418H575M490 439H560M490 460H549" stroke="#7EA8E0" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(3 666 394)">
+    <rect x="602" y="333" width="132" height="157" rx="16" fill="url(#paper)" stroke="#1D3A68" stroke-width="7"/>
+    <rect x="615" y="347" width="106" height="35" rx="8" fill="url(#orange)"/>
+    <text x="668" y="371" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="20" font-weight="700">FORM</text>
+    <path d="M621 400H710M621 421H710M621 442H694M621 463H681" stroke="#7EA8E0" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(7 770 393)">
+    <rect x="733" y="340" width="113" height="146" rx="15" fill="url(#paper)" stroke="#1D3A68" stroke-width="7"/>
+    <rect x="745" y="354" width="89" height="33" rx="8" fill="#0867D5"/>
+    <text x="789" y="376" text-anchor="middle" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="14" font-weight="700">CERT</text>
+    <path d="M750 406H827M750 426H827M750 446H816M750 466H808" stroke="#7EA8E0" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <!-- Orange service accents -->
+  <path d="M808 24L825 2M832 58L858 44M838 94H858" stroke="url(#orange)" stroke-width="10" stroke-linecap="round"/>
+</svg>
