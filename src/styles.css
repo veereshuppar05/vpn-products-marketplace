@@ -4731,3 +4731,132 @@ footer a:hover { color: var(--orange-dark); }
     font-size: 20px !important;
   }
 }
+
+
+/* Shiprocket courier quote selector and seller parcel-metadata form. */
+.shipping-package-fields {
+  display: grid;
+  gap: 9px;
+  margin: 4px 0 15px;
+  padding: 14px;
+  border: 1px solid #dce6f3;
+  border-radius: 11px;
+  background: #f7faff;
+}
+.shipping-package-fields > b {
+  color: #183354;
+  font-size: 14px;
+}
+.shipping-package-fields > small {
+  color: #6d7f98;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.shipping-package-fields .row {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 10px;
+}
+.shipping-package-fields label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: #344966;
+  font-size: 12px;
+  font-weight: 700;
+}
+.shipping-package-fields input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.shiprocket-quotes {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #dce6f3;
+  border-radius: 14px;
+  background: #fbfcff;
+}
+.shiprocket-quotes-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.shiprocket-quotes-heading b {
+  color: #142d50;
+  font-size: 16px;
+}
+.shiprocket-quotes-heading span {
+  color: #60748f;
+  font-size: 11px;
+  font-weight: 700;
+}
+.shiprocket-quotes > p {
+  margin: 0;
+  color: #687b96;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.shiprocket-quote-button {
+  min-height: 42px;
+  justify-content: center;
+}
+.shiprocket-courier-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+}
+.shiprocket-courier-option {
+  display: grid !important;
+  grid-template-columns: 18px minmax(0,1fr) auto;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  padding: 11px 12px;
+  border: 1px solid #dce6f3;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.shiprocket-courier-option.selected {
+  border-color: #347ddd;
+  background: #f1f7ff;
+  box-shadow: 0 0 0 2px #347ddd13;
+}
+.shiprocket-courier-option input[type="radio"] {
+  width: 17px !important;
+  height: 17px;
+  margin: 0;
+  accent-color: #1769c8;
+}
+.shiprocket-courier-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.shiprocket-courier-copy b {
+  color: #172f50;
+  font-size: 13px;
+  line-height: 1.25;
+}
+.shiprocket-courier-copy small {
+  color: #75849a;
+  font-size: 11px;
+  font-weight: 500;
+}
+.shiprocket-courier-option > strong {
+  color: #1558aa;
+  font-size: 15px;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .shipping-package-fields .row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .shiprocket-quotes { padding: 14px; }
+}
+@media (max-width: 460px) {
+  .shiprocket-quotes-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .shiprocket-courier-option { padding: 10px; grid-template-columns: 18px minmax(0,1fr) auto; }
+}
