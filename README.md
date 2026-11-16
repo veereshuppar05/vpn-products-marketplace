@@ -15,6 +15,9 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Saved delivery addresses with default address selection
 - Checkout with saved address selection, order review and order-request confirmation
 - Shiprocket courier serviceability and delivery-rate quotes, with the selected courier and fee saved on the order
+- My Orders page with customer cancellation, delivered-order return requests and shipment status refresh
+- Admin order workflow to confirm orders, record verified prepaid payments, book Shiprocket shipments and process return requests
+- ₹1 checkout/cancellation test listing that never books a courier or triggers a physical shipment
 - Prepaid orders only; Cash on Delivery (COD) is not supported, and shipments are booked only after payment is verified
 - Single Shiprocket pickup location at the VPN Products and Services shop
 - Server-side Shiprocket shipment-booking and AWB-tracking actions
@@ -24,7 +27,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Public product image storage with seller-scoped upload policies
 - Demo products are shown when Supabase variables are not configured
 
-Online payments, escrow, in-app chat, OTP login, identity verification, and a full admin dashboard are not included. Checkout submits an order request and a Shiprocket delivery estimate; it does not collect payment or book a courier automatically. An administrator must confirm the order, record that payment was received, and then call the protected shipment-booking action. The customer can send the order reference to the business on WhatsApp for manual confirmation.
+Online payments, escrow and in-app chat are not included. Checkout submits a prepaid order request and a Shiprocket delivery estimate; this website does not collect money online. The administrator must confirm product availability, collect and verify advance payment, then book the shipment from My Orders. Customers can cancel before dispatch, refresh courier status from My Orders, and request a return after delivery. Returns are reviewed and reverse pickup is booked by an administrator.
 
 ## Registration method
 
@@ -37,7 +40,9 @@ New customer accounts and sign-ins both use an email address and password. Phone
 4. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
 5. Run `supabase/shipping-integration.sql` in Supabase SQL Editor to add parcel dimensions, secure Shiprocket quotes and shipping fields to marketplace orders.
 6. Run `supabase/prepaid-only.sql` in Supabase SQL Editor to enforce prepaid-only payment method and reject COD statuses.
-4. Set these environment variables in Cloudflare Pages:
+7. Run `supabase/order-lifecycle.sql` in Supabase SQL Editor to enable customer cancellation, return requests and tracking metadata.
+8. Run `supabase/seed-one-rupee-test-product.sql` in Supabase SQL Editor to create the clearly labelled ₹1 checkout/cancellation test listing. First make sure your shop account has `profiles.is_admin=true`.
+9. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
 5. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
@@ -55,6 +60,10 @@ In Supabase Dashboard > Edge Functions > Secrets, add:
 - `SHIPROCKET_PASSWORD` — the Shiprocket API password.
 - `SHIPROCKET_PICKUP_LOCATION` — exact pickup-location name registered in Shiprocket.
 - `SHIPROCKET_PICKUP_POSTCODE` — the shop's six-digit pickup PIN code.
+- `SHIPROCKET_PICKUP_ADDRESS` — full shop street address (needed for reverse pickups).
+- `SHIPROCKET_PICKUP_CITY` — shop city (needed for reverse pickups).
+- `SHIPROCKET_PICKUP_STATE` — shop state (needed for reverse pickups).
+- `SHIPROCKET_PICKUP_PHONE` — shop contact phone (needed for reverse pickups).
 
 Do not add these secrets to Vite environment variables, GitHub, or browser code. The Edge Function reads the Supabase server environment and keeps the Shiprocket token server-side.
 
@@ -113,7 +122,9 @@ curl -X POST "$SUPABASE_URL/functions/v1/shiprocket" \
 
 A buyer or administrator can request tracking with the same endpoint and their own valid access token, using `{"action":"track","orderId":"<marketplace-order-uuid>"}`.
 
-This project currently has no admin order-management screen; the confirmation/payment update and the admin booking call are manual server-side operations. No Shiprocket booking is made when a customer only submits an unconfirmed order request.
+My Orders includes a shop-admin view when the signed-in profile has `is_admin=true`. Admins can confirm orders, mark a prepaid payment as received only after verification, book a shipment and approve/reject return requests. The ₹1 test product is flagged in the database and is always blocked from Shiprocket shipment booking. It receives a zero-fee test-only quote so checkout and customer cancellation can be tested without Shiprocket credentials or a real pickup. Customers must use a separate account from the admin/seller account to buy the test listing.
+
+Delivery status is refreshed on demand from the customer's My Orders page using the Shiprocket AWB. It is not a push notification/webhook yet. A customer may cancel before courier dispatch; once the parcel is dispatched, the customer must use the delivered-order return flow instead. A prepaid refund is not issued automatically by this website and must be handled by the shop after reviewing the request. Reverse pickup approval requires the four additional `SHIPROCKET_PICKUP_*` secrets listed above.
 
 ## Deploy on Cloudflare Pages
 - Connect this GitHub repository.
