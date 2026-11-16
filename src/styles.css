@@ -4445,3 +4445,17 @@ footer a:hover { color: var(--orange-dark); }
     margin: 22px auto 28px !important;
   }
 }
+
+
+/* Match the Contact section heading size with the other reduced page headings. */
+.contact-section .section-title h2 {
+  font-size: clamp(21px, 1.8vw, 25px) !important;
+  line-height: 1.18 !important;
+  margin: 4px 0 5px !important;
+}
+@media (max-width: 850px) {
+  .contact-section .section-title h2 { font-size: 22px !important; }
+}
+@media (max-width: 560px) {
+  .contact-section .section-title h2 { font-size: 20px !important; }
+}
