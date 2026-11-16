@@ -39,6 +39,11 @@ type MarketplaceOrder = {
   tracking_updated_at?: string | null; is_test_order?: boolean; cancellation_reason?: string | null;
   items: MarketplaceOrderItem[]; returnRequest?: MarketplaceReturnRequest | null;
 };
+type ServiceEnquiry = {
+  id: string; full_name: string; phone: string; email: string; service: string;
+  details: string; preferred_contact: "whatsapp"|"phone"|"email";
+  status: "new"|"contacted"|"closed"; admin_note?: string; created_at: string;
+};
 const emptyAddressDraft:AddressDraft = {
   full_name:"",phone:"",pincode:"",address_line1:"",address_line2:"",
   landmark:"",city:"",state:"",district:"",address_type:"Home",is_default:false
@@ -255,6 +260,20 @@ const productIdFromPath = () => {
   try { return decodeURIComponent(slug); } catch { return null; }
 };
 const money = (n:number) => new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(n);
+const serviceEnquiryOptions = [
+  {slug:"computer-shop-services",title:"Computer Shop & Services",icon:"💻",description:"Computers, laptops, accessories, setup, troubleshooting, upgrades and service support."},
+  {slug:"mobile-services",title:"Mobile Services",icon:"📱",description:"Mobile device services, setup and support for phones and tablets."},
+  {slug:"xerox-printing-scanning",title:"Xerox, Printing & Scanning",icon:"🖨️",description:"Photocopying, black-and-white and colour printing, document scanning and digital copies."},
+  {slug:"online-application-assistance",title:"Online Application Assistance",icon:"📝",description:"PAN card applications, eligible Aadhaar-related services, income and caste certificate applications, and online forms."},
+  {slug:"website-development",title:"Website Development",icon:"🌐",description:"Business websites, professional pages, service websites and online stores."}
+] as const;
+const serviceEnquirySlugFromLocation = () => {
+  if (window.location.pathname.replace(/\/+$/,"") !== "/enquire") return null;
+  const requested = new URLSearchParams(window.location.search).get("service") || "";
+  return serviceEnquiryOptions.some(option=>option.slug===requested)
+    ? requested : serviceEnquiryOptions[0].slug;
+};
+
 
 export default function App() {
   const [items,setItems] = useState<Listing[]>([...demo,...featuredListings,...sampleListings]);
@@ -278,6 +297,16 @@ export default function App() {
   const [cartItems,setCartItems] = useState<Listing[]>([]);
   const [showCartPage,setShowCartPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/cart");
   const [showOrdersPage,setShowOrdersPage] = useState(false);
+  const [showServiceEnquiryPage,setShowServiceEnquiryPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/enquire");
+  const [enquiryService,setEnquiryService] = useState<string>(()=>serviceEnquirySlugFromLocation() || serviceEnquiryOptions[0].slug);
+  const [enquiryForm,setEnquiryForm] = useState({fullName:"",phone:"",email:"",details:"",preferredContact:"whatsapp" as "whatsapp"|"phone"|"email"});
+  const [enquirySubmitting,setEnquirySubmitting] = useState(false);
+  const [enquirySuccessId,setEnquirySuccessId] = useState("");
+  const [showServiceEnquiriesPage,setShowServiceEnquiriesPage] = useState(false);
+  const [serviceEnquiries,setServiceEnquiries] = useState<ServiceEnquiry[]>([]);
+  const [serviceEnquiriesLoading,setServiceEnquiriesLoading] = useState(false);
+  const [serviceEnquiryBusyId,setServiceEnquiryBusyId] = useState("");
+
   const [isAdmin,setIsAdmin] = useState(false);
   const [orders,setOrders] = useState<MarketplaceOrder[]>([]);
   const [ordersLoading,setOrdersLoading] = useState(false);
@@ -526,7 +555,11 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const categoryPage = categoryFromPath();
-      const cartPage = window.location.pathname.replace(/\/+$/,"")==="/cart";
+      const currentPath = window.location.pathname.replace(/\/+$/,"");
+      const cartPage = currentPath==="/cart";
+      setShowServiceEnquiryPage(currentPath==="/enquire");
+      setEnquiryService(serviceEnquirySlugFromLocation() || serviceEnquiryOptions[0].slug);
+      setShowServiceEnquiriesPage(currentPath==="/admin/service-enquiries");
       setShowCartPage(cartPage);
       setSelectedProductId(productIdFromPath());
       setSelectedCategoryPage(categoryPage);
@@ -563,6 +596,114 @@ export default function App() {
     };
   }, [photoViewerOpen,selectedProduct]);
 
+
+  const openServiceEnquiry = (serviceSlug:string) => {
+    const selected = serviceEnquiryOptions.find(option=>option.slug===serviceSlug) || serviceEnquiryOptions[0];
+    window.history.pushState({fromServiceEnquiry:true},"","/enquire?service="+encodeURIComponent(selected.slug));
+    setShowServiceEnquiryPage(true);
+    setShowServiceEnquiriesPage(false);
+    setShowCartPage(false);
+    setShowOrdersPage(false);
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
+    setEnquiryService(selected.slug);
+    setEnquiryForm({
+      fullName:user?.user_metadata?.full_name || "",
+      phone:"",
+      email:user?.email || "",
+      details:"",
+      preferredContact:"whatsapp"
+    });
+    setEnquirySuccessId("");
+    setProfileMenuOpen(false);
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const backFromServiceEnquiry = () => {
+    if (window.history.state?.fromServiceEnquiry) window.history.back();
+    else {
+      window.history.replaceState({},"","/#services");
+      setShowServiceEnquiryPage(false);
+      window.setTimeout(()=>document.getElementById("services")?.scrollIntoView({behavior:"smooth"}),0);
+    }
+  };
+  const loadServiceEnquiries = async () => {
+    if (!db || !user || !isAdmin) return;
+    setServiceEnquiriesLoading(true);
+    const {data,error} = await db.from("service_enquiries").select("*").order("created_at",{ascending:false}).limit(100);
+    setServiceEnquiriesLoading(false);
+    if (error) {
+      setNotice("Could not load service enquiries. Run supabase/service-enquiries.sql. "+error.message);
+      setServiceEnquiries([]);
+      return;
+    }
+    setServiceEnquiries((data || []) as ServiceEnquiry[]);
+  };
+  const openAdminServiceEnquiries = async () => {
+    if (!db || !user || !isAdmin) {
+      setNotice("Sign in with the VPN Products administrator account to view service enquiries.");
+      return;
+    }
+    window.history.pushState({fromServiceEnquiries:true},"","/admin/service-enquiries");
+    setProfileMenuOpen(false);
+    setShowServiceEnquiriesPage(true);
+    setShowServiceEnquiryPage(false);
+    setShowOrdersPage(false);
+    setShowCartPage(false);
+    await loadServiceEnquiries();
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const updateServiceEnquiryStatus = async (enquiryId:string,status:"contacted"|"closed") => {
+    if (!db || !user || !isAdmin) return;
+    setServiceEnquiryBusyId(enquiryId);
+    const {error} = await db.from("service_enquiries").update({status,updated_at:new Date().toISOString()}).eq("id",enquiryId);
+    setServiceEnquiryBusyId("");
+    if (error) {
+      setNotice("Could not update this enquiry. "+error.message);
+      return;
+    }
+    setServiceEnquiries(current=>current.map(item=>item.id===enquiryId?{...item,status}:item));
+    setNotice(status==="contacted"?"Enquiry marked as contacted.":"Enquiry closed.");
+  };
+  const submitServiceEnquiry = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db) {
+      setNotice("The enquiry form is temporarily unavailable. Please contact us by phone or WhatsApp.");
+      return;
+    }
+    const digits = enquiryForm.phone.replace(/\D/g,"");
+    if (enquiryForm.fullName.trim().length<2 || enquiryForm.fullName.trim().length>80) {
+      setNotice("Enter your full name (2 to 80 characters).");
+      return;
+    }
+    if (!/^[0-9]{10}$/.test(digits)) {
+      setNotice("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    if (enquiryForm.details.trim().length<10) {
+      setNotice("Please describe what you need (at least 10 characters).");
+      return;
+    }
+    setEnquirySubmitting(true);
+    const {data,error} = await db.from("service_enquiries").insert({
+      user_id:user?.id || null,
+      full_name:enquiryForm.fullName.trim(),
+      phone:digits,
+      email:enquiryForm.email.trim(),
+      service:enquiryService,
+      details:enquiryForm.details.trim(),
+      preferred_contact:enquiryForm.preferredContact
+    }).select("id").single();
+    setEnquirySubmitting(false);
+    if (error) {
+      setNotice("Your enquiry could not be submitted. "+error.message+" Please try again or contact us directly.");
+      return;
+    }
+    setEnquirySuccessId(String(data?.id || ""));
+    setEnquiryForm(current=>({...current,details:""}));
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
 
   const openProduct = (item:Listing) => {
     const categoryPath = categorySlug(item.category);
@@ -1513,6 +1654,9 @@ export default function App() {
           <button type="button" className="profile-menu-item" role="menuitem" onClick={openMyOrders}>
             <span aria-hidden="true">▣</span> My Orders
           </button>
+          {isAdmin && <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>void openAdminServiceEnquiries()}>
+            <span aria-hidden="true">✉</span> Service Enquiries
+          </button>
           <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("view")}>
             <span aria-hidden="true">♙</span> My Profile
           </button>
@@ -1532,7 +1676,58 @@ export default function App() {
         </div>}
       </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
-      {showOrdersPage ? <section className="my-orders-page section">
+      {showServiceEnquiriesPage ? <section className="service-enquiries-admin-page section">
+        <button type="button" className="cart-page-back" onClick={()=>window.history.state?.fromServiceEnquiries?window.history.back():(setShowServiceEnquiriesPage(false),window.history.replaceState({},"","/"))}>← Back</button>
+        <div className="cart-page-heading"><span className="eyebrow">ADMINISTRATION</span><h1>Service Enquiries</h1><p>Review requests submitted for computer, mobile, printing, application and website services.</p></div>
+        {serviceEnquiriesLoading ? <div className="cart-page-empty"><p>Loading enquiries…</p></div>
+          : serviceEnquiries.length===0 ? <div className="cart-page-empty"><span className="cart-page-empty-icon">✉</span><h2>No enquiries yet</h2><p>Customer submissions will appear here.</p></div>
+          : <div className="service-enquiry-admin-list">
+            {serviceEnquiries.map(enquiry=>{
+              const service = serviceEnquiryOptions.find(option=>option.slug===enquiry.service);
+              const busy = serviceEnquiryBusyId===enquiry.id;
+              return <article className="service-enquiry-admin-card" key={enquiry.id}>
+                <div className="service-enquiry-admin-head"><div><span className="eyebrow">SERVICE REQUEST</span><h2>{service?.title || enquiry.service}</h2><small>{new Date(enquiry.created_at).toLocaleString("en-IN")} · #{enquiry.id.slice(0,8).toUpperCase()}</small></div><span className={"service-enquiry-status "+(enquiry.status==="new"?"is-new":enquiry.status==="contacted"?"is-contacted":"is-closed")}>{enquiry.status}</span></div>
+                <div className="service-enquiry-admin-details">
+                  <span><b>Name</b>{enquiry.full_name}</span><span><b>Mobile</b><a href={"tel:+91"+enquiry.phone}>+91 {enquiry.phone}</a></span>
+                  <span><b>Email</b>{enquiry.email ? <a href={"mailto:"+enquiry.email}>{enquiry.email}</a> : "Not provided"}</span><span><b>Preferred contact</b>{enquiry.preferred_contact}</span>
+                </div>
+                <p className="service-enquiry-admin-message">{enquiry.details}</p>
+                <div className="service-enquiry-admin-actions">
+                  <a className="btn light" href={"https://wa.me/91"+enquiry.phone+"?text="+encodeURIComponent("Hello "+enquiry.full_name+", this is VPN Products and Services regarding your "+(service?.title || "service")+" enquiry.")} target="_blank" rel="noopener noreferrer">Reply on WhatsApp</a>
+                  {enquiry.status==="new" && <button className="btn primary" type="button" disabled={busy} onClick={()=>void updateServiceEnquiryStatus(enquiry.id,"contacted")}>Mark contacted</button>}
+                  {enquiry.status!=="closed" && <button className="btn light" type="button" disabled={busy} onClick={()=>void updateServiceEnquiryStatus(enquiry.id,"closed")}>Close enquiry</button>}
+                  {enquiry.status==="closed" && <button className="btn light" type="button" disabled={busy} onClick={()=>void updateServiceEnquiryStatus(enquiry.id,"contacted")}>Reopen</button>}
+                </div>
+              </article>;
+            })}
+          </div>}
+      </section> : showServiceEnquiryPage ? <section className="service-enquiry-page section">
+        <button type="button" className="cart-page-back" onClick={backFromServiceEnquiry}>← Back to services</button>
+        {!enquirySuccessId ? <>
+          <div className="service-enquiry-heading"><span className="eyebrow">SERVICE ENQUIRY</span><h1>How can we help you?</h1><p>Tell us what you need. Our team at VPN Products and Services will contact you to discuss the service and next steps.</p></div>
+          <div className="service-enquiry-layout">
+            <form className="service-enquiry-form" onSubmit={submitServiceEnquiry}>
+              <div className="service-enquiry-form-heading"><span className="service-enquiry-selected-icon">{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.icon || "✉"}</span><div><b>Submit your enquiry</b><small>Fields marked * are required.</small></div></div>
+              <label>Service required *
+                <select required value={enquiryService} onChange={event=>setEnquiryService(event.target.value)}>{serviceEnquiryOptions.map(option=><option key={option.slug} value={option.slug}>{option.title}</option>)}</select>
+              </label>
+              <div className="service-enquiry-field-grid">
+                <label>Full name *<input required minLength={2} maxLength={80} autoComplete="name" value={enquiryForm.fullName} onChange={event=>setEnquiryForm(current=>({...current,fullName:event.target.value}))} placeholder="Enter your name"/></label>
+                <label>Mobile number *<input required type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} value={enquiryForm.phone} onChange={event=>setEnquiryForm(current=>({...current,phone:event.target.value.replace(/\D/g,"").slice(0,10)}))} placeholder="10-digit mobile number"/></label>
+                <label>Email address (optional)<input type="email" autoComplete="email" maxLength={254} value={enquiryForm.email} onChange={event=>setEnquiryForm(current=>({...current,email:event.target.value}))} placeholder="you@example.com"/></label>
+                <label>Preferred contact method<select value={enquiryForm.preferredContact} onChange={event=>setEnquiryForm(current=>({...current,preferredContact:event.target.value as "whatsapp"|"phone"|"email"}))}><option value="whatsapp">WhatsApp</option><option value="phone">Phone call</option><option value="email">Email</option></select></label>
+              </div>
+              <label>Tell us what you need help with *<textarea required minLength={10} maxLength={2000} rows={5} value={enquiryForm.details} onChange={event=>setEnquiryForm(current=>({...current,details:event.target.value}))} placeholder="Describe the service, device, application or website requirements…"/></label>
+              <p className="service-enquiry-privacy">By submitting, you agree that VPN Products and Services may contact you about this enquiry. Please do not include passwords, OTPs, UPI PINs or other confidential credentials.</p>
+              <button className="btn primary service-enquiry-submit" type="submit" disabled={enquirySubmitting}>{enquirySubmitting?"Submitting enquiry…":"Submit enquiry →"}</button>
+            </form>
+            <aside className="service-enquiry-aside">
+              <div className="service-enquiry-service-summary"><span className="service-enquiry-selected-icon">{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.icon || "✉"}</span><span className="eyebrow">SELECTED SERVICE</span><h2>{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.title}</h2><p>{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.description}</p></div>
+              <div className="service-enquiry-contact"><b>Prefer to contact us directly?</b><a href="tel:+919916140898">Call +91 99161 40898</a><a href="https://wa.me/919916140898" target="_blank" rel="noopener noreferrer">Chat on WhatsApp →</a><a href="mailto:vpnproductsandservices@gmail.com">vpnproductsandservices@gmail.com</a></div>
+            </aside>
+          </div>
+        </> : <div className="service-enquiry-success"><span className="service-enquiry-success-mark">✓</span><span className="eyebrow">ENQUIRY RECEIVED</span><h1>Thank you, {enquiryForm.fullName.trim() || "we've received your enquiry"}!</h1><p>Your enquiry for <b>{serviceEnquiryOptions.find(option=>option.slug===enquiryService)?.title}</b> has been submitted successfully. Our team will contact you using your preferred method.</p>{enquirySuccessId && <small>Enquiry reference: #{enquirySuccessId.slice(0,8).toUpperCase()}</small>}<div className="service-enquiry-success-actions"><button className="btn primary" type="button" onClick={()=>openServiceEnquiry(enquiryService)}>Submit another enquiry</button><button className="btn light" type="button" onClick={backFromServiceEnquiry}>Back to services</button></div></div>}
+      </section> : showOrdersPage ? <section className="my-orders-page section">
         <button type="button" className="cart-page-back" onClick={()=>setShowOrdersPage(false)}>← Continue shopping</button>
         <div className="cart-page-heading">
           <span className="eyebrow">ACCOUNT</span>
@@ -1937,7 +2132,7 @@ export default function App() {
         <div className="section-title"><div><span className="eyebrow">EXPLORE OUR MARKETPLACE</span><h2>Shop by Category</h2></div><button className="text-link" onClick={openAllCategories}>View all categories →</button></div>
         <div className="category-grid">{categoryTiles.map(tile=><button className="category-tile" key={tile.name} onClick={()=>openCategory(tile.name)}><span className="tile-icon">{tile.icon}</span><b>{tile.name}</b></button>)}</div>
       </section>
-      <section className="services section" id="services"><div className="section-title"><div><span className="eyebrow">MORE THAN A MARKETPLACE</span><h2>Products, Services & Digital Solutions</h2><p>Get computer and mobile support, photocopying, printing, document scanning and help with eligible online applications.</p></div></div><div className="service-grid"><article className="service-card"><span className="service-icon" aria-hidden="true">💻</span><h3>Computer Shop & Services</h3><p>Computers, laptops and accessories, plus setup, troubleshooting, upgrades and service support.</p><button className="service-link" onClick={()=>setNotice("Contact us for computer and laptop availability or service enquiries.")}>Enquire about computer services →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">📱</span><h3>Mobile Services</h3><p>Mobile device services, setup and support for everyday phone and tablet needs.</p><button className="service-link" onClick={()=>setNotice("Contact us for mobile service enquiries.")}>Enquire about mobile services →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">🖨️</span><h3>Xerox, Printing & Scanning</h3><p>Photocopying, black-and-white and colour printing, document scanning and digital copies.</p><button className="service-link" onClick={()=>setNotice("Contact us for Xerox, photocopy, printing and document scanning enquiries.")}>Enquire about printing services →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">📝</span><h3>Online Application Assistance</h3><p>Help with PAN card applications, eligible Aadhaar-related services, income and caste certificate applications, and other online forms.</p><button className="service-link" onClick={()=>setNotice("Contact us for PAN, eligible Aadhaar, income or caste certificate application assistance. Service availability depends on the relevant portal and eligibility.")}>Enquire about application help →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">🌐</span><h3>Website Development</h3><p>Websites for businesses, shops, professionals and service providers — from business pages to online stores.</p><button className="service-link" onClick={()=>setNotice("Contact us to discuss your website project.")}>Discuss a website project →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">🔄</span><h3>Buy & Sell Products</h3><p>Discover or list new and second-hand phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and much more.</p><button className="service-link" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Explore marketplace →</button></article></div></section>
+      <section className="services section" id="services"><div className="section-title"><div><span className="eyebrow">MORE THAN A MARKETPLACE</span><h2>Products, Services & Digital Solutions</h2><p>Get computer and mobile support, photocopying, printing, document scanning and help with eligible online applications.</p></div></div><div className="service-grid"><article className="service-card"><span className="service-icon" aria-hidden="true">💻</span><h3>Computer Shop & Services</h3><p>Computers, laptops and accessories, plus setup, troubleshooting, upgrades and service support.</p><button className="service-link" onClick={()=>openServiceEnquiry("computer-shop-services")}>Enquire about computer services →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">📱</span><h3>Mobile Services</h3><p>Mobile device services, setup and support for everyday phone and tablet needs.</p><button className="service-link" onClick={()=>openServiceEnquiry("mobile-services")}>Enquire about mobile services →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">🖨️</span><h3>Xerox, Printing & Scanning</h3><p>Photocopying, black-and-white and colour printing, document scanning and digital copies.</p><button className="service-link" onClick={()=>openServiceEnquiry("xerox-printing-scanning")}>Enquire about printing services →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">📝</span><h3>Online Application Assistance</h3><p>Help with PAN card applications, eligible Aadhaar-related services, income and caste certificate applications, and other online forms.</p><button className="service-link" onClick={()=>openServiceEnquiry("online-application-assistance")}>Enquire about application help →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">🌐</span><h3>Website Development</h3><p>Websites for businesses, shops, professionals and service providers — from business pages to online stores.</p><button className="service-link" onClick={()=>openServiceEnquiry("website-development")}>Discuss a website project →</button></article><article className="service-card"><span className="service-icon" aria-hidden="true">🔄</span><h3>Buy & Sell Products</h3><p>Discover or list new and second-hand phones, computers, vehicle parts, electronics, furniture, appliances, books, tools and much more.</p><button className="service-link" onClick={()=>document.getElementById("listings")?.scrollIntoView({behavior:"smooth"})}>Explore marketplace →</button></article></div></section>
       <section className="section recent-products-section" id="listings"><div className="section-title"><div><span className="eyebrow">LATEST MARKETPLACE LISTINGS</span><h2>Recently Added Products</h2><p>Showing {Math.min(visible.length,5)} of {visible.length} products {place ? "near "+place : "across India"}, newest first</p></div></div>{recentProductCards}</section>
       <section className="sell-cta"><div><span className="eyebrow">SELL ALMOST ANYTHING</span><h2>Have something useful to sell?</h2><p>List phones, computers, parts, electronics, furniture, appliances, vehicles and many other items.</p></div><button className="btn primary" onClick={openSell}>Start selling</button></section>
       <section className="safety"><b>Buy and sell safely</b><p>Inspect items before paying, meet in a public place, and never share OTPs, UPI PINs or banking passwords.</p></section>
