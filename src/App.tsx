@@ -1093,7 +1093,7 @@ export default function App() {
   const displayName = user?.user_metadata?.full_name?.trim() || user?.email?.split("@")[0] || user?.phone || "User";
 
   return <div className="site">
-    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCart} aria-label={"Shopping cart with "+cartItems.length+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 1.9-1.4L22 8H6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg>{cartItems.length>0 && <span className="cart-count">{cartItems.length}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
+    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCartPage} aria-label={"Shopping cart with "+cartItems.length+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 1.9-1.4L22 8H6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg>{cartItems.length>0 && <span className="cart-count">{cartItems.length}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
         <button type="button" className="profile-icon-button" aria-label={"Open profile menu for "+displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={()=>setProfileMenuOpen(value=>!value)}>
           {user.user_metadata?.avatar_url ? <img className="profile-avatar profile-avatar-image" src={user.user_metadata.avatar_url} alt="" /> : <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>}
         </button>
@@ -1558,108 +1558,6 @@ export default function App() {
           </form>
         </>}
       </div>
-    </div>}
-    {cartPanelOpen && user && <div className="overlay commerce-overlay" onClick={closeCartPanel}>
-      <section className="modal wide commerce-modal" role="dialog" aria-modal="true" aria-labelledby="commerce-title" onClick={event=>event.stopPropagation()}>
-        <button className="close" type="button" aria-label="Close shopping cart" onClick={closeCartPanel}>×</button>
-        {checkoutStep==="cart" && <>
-          <span className="eyebrow commerce-eyebrow">YOUR SHOPPING BAG</span>
-          <h2 id="commerce-title">Shopping Cart ({cartItems.length})</h2>
-          {cartItems.length===0 ? <div className="commerce-empty">
-            <span className="commerce-empty-icon" aria-hidden="true">🛒</span>
-            <h3>Your cart is empty</h3>
-            <p>Explore the marketplace and add products you would like to buy.</p>
-            <button className="btn primary" type="button" onClick={()=>{closeCartPanel();document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});}}>Browse products</button>
-          </div> : <>
-            <div className="commerce-cart-list">
-              {cartItems.map(item=><article className="commerce-cart-item" key={item.id}>
-                <img src={item.image_urls?.[0] || "/vpn-logo.webp"} alt={item.title}/>
-                <div className="commerce-cart-item-info">
-                  <b>{item.title}</b>
-                  <small>{item.category} · {item.condition}</small>
-                  <small>{item.city}, {item.state}</small>
-                  <strong>{money(Number(item.price))}</strong>
-                </div>
-                <button type="button" className="commerce-remove-button" onClick={()=>void removeCartItem(item.id)}>Remove</button>
-              </article>)}
-            </div>
-            <div className="commerce-total-row"><span>Cart subtotal</span><strong>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</strong></div>
-            <p className="commerce-note">Delivery charges and final availability are confirmed by the seller before the order is accepted.</p>
-            <button className="btn primary full commerce-primary-action" type="button" onClick={beginCartCheckout}>Proceed to checkout →</button>
-          </>}
-        </>}
-        {checkoutStep==="address" && <>
-          <button type="button" className="commerce-back" onClick={()=>setCheckoutStep("cart")}>← Back to cart</button>
-          <span className="eyebrow commerce-eyebrow">CHECKOUT · STEP 1 OF 2</span>
-          <h2 id="commerce-title">Select delivery address</h2>
-          <p className="auth-hint">Choose where you want your order delivered, or add a new address.</p>
-          {addresses.length>0 && <div className="commerce-address-list">
-            {addresses.map(address=><article className={"commerce-address-option"+(selectedAddressId===address.id?" selected":"")} key={address.id}>
-              <label>
-                <input type="radio" name="checkout-address" value={address.id} checked={selectedAddressId===address.id} onChange={()=>setSelectedAddressId(address.id)}/>
-                <span className="commerce-address-copy">
-                  <span className="commerce-address-title"><b>{address.full_name}</b><small>{address.address_type}</small>{address.is_default && <em>Default</em>}</span>
-                  <span>{address.address_line1}, {address.address_line2}</span>
-                  {address.landmark && <span>Landmark: {address.landmark}</span>}
-                  <span>{address.city}, {address.state} - {address.pincode}</span>
-                  <span>Mobile: +91 {address.phone}</span>
-                </span>
-              </label>
-              <button type="button" className="commerce-remove-button" onClick={()=>void deleteCustomerAddress(address.id)}>Delete</button>
-            </article>)}
-          </div>}
-          {!addressFormOpen && <button type="button" className="commerce-add-address" onClick={()=>{setAddressDraft(emptyAddressDraft);setAddressFormOpen(true);}}>＋ Add a new delivery address</button>}
-          {addressFormOpen && <form className="commerce-address-form" onSubmit={saveCustomerAddress}>
-            <div className="commerce-form-heading"><b>Add delivery address</b><button type="button" className="commerce-cancel-form" onClick={()=>{setAddressFormOpen(false);setAddressDraft(emptyAddressDraft);}}>Cancel</button></div>
-            <div className="commerce-form-grid">
-              <label>Full name<input required maxLength={80} autoComplete="name" value={addressDraft.full_name} onChange={event=>setAddressDraft(current=>({...current,full_name:event.target.value}))} placeholder="Name of recipient"/></label>
-              <label>Mobile number<input required type="tel" inputMode="numeric" maxLength={10} autoComplete="tel-national" value={addressDraft.phone} onChange={event=>setAddressDraft(current=>({...current,phone:event.target.value.replace(/\D/g,"").slice(0,10)}))} placeholder="10-digit mobile number"/></label>
-              <label>PIN code<input required inputMode="numeric" maxLength={6} autoComplete="postal-code" value={addressDraft.pincode} onChange={event=>setAddressDraft(current=>({...current,pincode:event.target.value.replace(/\D/g,"").slice(0,6)}))} placeholder="6-digit PIN code"/></label>
-              <label>Flat, house no. or building<input required maxLength={160} autoComplete="address-line1" value={addressDraft.address_line1} onChange={event=>setAddressDraft(current=>({...current,address_line1:event.target.value}))} placeholder="House / flat / building"/></label>
-              <label>Area, street or village<input required maxLength={160} autoComplete="address-line2" value={addressDraft.address_line2} onChange={event=>setAddressDraft(current=>({...current,address_line2:event.target.value}))} placeholder="Street, area or village"/></label>
-              <label>Landmark (optional)<input maxLength={120} value={addressDraft.landmark} onChange={event=>setAddressDraft(current=>({...current,landmark:event.target.value}))} placeholder="Nearby landmark"/></label>
-              <label>Town / city<input required maxLength={80} autoComplete="address-level2" value={addressDraft.city} onChange={event=>setAddressDraft(current=>({...current,city:event.target.value}))} placeholder="City or town"/></label>
-              <label>State<input required maxLength={80} autoComplete="address-level1" value={addressDraft.state} onChange={event=>setAddressDraft(current=>({...current,state:event.target.value}))} placeholder="State"/></label>
-              <label>Address type<select value={addressDraft.address_type} onChange={event=>setAddressDraft(current=>({...current,address_type:event.target.value as AddressDraft["address_type"]}))}><option value="Home">Home</option><option value="Work">Work</option><option value="Other">Other</option></select></label>
-            </div>
-            <label className="commerce-default-toggle"><input type="checkbox" checked={addressDraft.is_default} onChange={event=>setAddressDraft(current=>({...current,is_default:event.target.checked}))}/> Save as my default address</label>
-            <button className="btn primary full" type="submit" disabled={commerceSaving}>{commerceSaving?"Saving address…":"Save address"}</button>
-          </form>}
-          <div className="commerce-checkout-footer">
-            <span>{checkoutItems.length} {checkoutItems.length===1?"item":"items"} · {money(checkoutSubtotal)}</span>
-            <button className="btn primary" type="button" disabled={!chosenAddress || checkoutItems.length===0 || commerceSaving} onClick={()=>setCheckoutStep("review")}>Continue to review →</button>
-          </div>
-        </>}
-        {checkoutStep==="review" && <>
-          <button type="button" className="commerce-back" onClick={()=>setCheckoutStep("address")}>← Change address</button>
-          <span className="eyebrow commerce-eyebrow">CHECKOUT · STEP 2 OF 2</span>
-          <h2 id="commerce-title">Review your order</h2>
-          {chosenAddress && <div className="commerce-review-address">
-            <b>Deliver to</b>
-            <strong>{chosenAddress.full_name} · +91 {chosenAddress.phone}</strong>
-            <span>{chosenAddress.address_line1}, {chosenAddress.address_line2}{chosenAddress.landmark?", "+chosenAddress.landmark:""}, {chosenAddress.city}, {chosenAddress.state} - {chosenAddress.pincode}</span>
-            <button type="button" className="commerce-back" onClick={()=>setCheckoutStep("address")}>Select another address</button>
-          </div>}
-          <div className="commerce-review-items">
-            {checkoutItems.map(item=><div className="commerce-review-item" key={item.id}>
-              <span>{item.title}</span><strong>{money(Number(item.price))}</strong>
-            </div>)}
-          </div>
-          <div className="commerce-total-row"><span>Order subtotal</span><strong>{money(checkoutSubtotal)}</strong></div>
-          <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. Availability, delivery charges and payment will be confirmed with you. No online payment is collected on this website.</p>
-          <button className="btn primary full commerce-primary-action" type="button" disabled={commerceSaving || !chosenAddress || checkoutItems.length===0} onClick={()=>void placeOrderRequest()}>{commerceSaving?"Submitting order request…":"Place order request"}</button>
-        </>}
-        {checkoutStep==="success" && <div className="commerce-success">
-          <span className="commerce-success-mark" aria-hidden="true">✓</span>
-          <span className="eyebrow commerce-eyebrow">REQUEST SUBMITTED</span>
-          <h2 id="commerce-title">Thank you for your order request!</h2>
-          <p>Your order request is saved as pending confirmation. Product availability, delivery charges and payment arrangements must be confirmed before the sale is finalised.</p>
-          {completedOrderId && <div className="commerce-order-reference">Order request ID <b>{completedOrderId}</b></div>}
-          <p className="commerce-note">No online payment has been taken. For quickest follow-up, send this request reference to our team on WhatsApp.</p>
-          <a className="btn primary full commerce-whatsapp-followup" href={"https://wa.me/919916140898?text="+encodeURIComponent("Hello VPN Products and Services, please confirm my order request "+completedOrderId+".")} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp</a>
-          <button className="btn light full" type="button" onClick={closeCartPanel}>Continue shopping</button>
-        </div>}
-      </section>
     </div>}
     {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{otpRequired?"Verify your phone number":mode==="login"?"Welcome back":"Create an account"}</h2>{otpRequired ? <form onSubmit={authenticate}><p className="auth-hint">Enter the SMS verification code sent to {pendingPhone}.</p><label>Verification code<input required type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code"/></label><button className="btn primary full">Verify phone</button></form> : <form key={mode} autoComplete={mode==="login"?"on":"off"} onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" name="signup-full-name" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email or Phone Number<input required type="text" name={mode==="login"?"username":"signup-identifier"} autoComplete={mode==="login"?"username":"off"} value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address or mobile number"/></label><label>Password<input required minLength={8} name={mode==="login"?"password":"signup-new-password"} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 8 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={8} name="signup-confirm-password" autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password (minimum 8 characters)"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Use an email address or an Indian 10-digit mobile number. Phone registration requires SMS verification.</p>}</form>}{!otpRequired && <>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button type="button" className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setEmail("");setPassword("");setConfirmPassword("");setFullName("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></>}</div></div>}
     {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
