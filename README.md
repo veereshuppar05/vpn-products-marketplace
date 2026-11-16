@@ -28,12 +28,13 @@ New customer accounts and sign-ins both use an email address and password. Phone
 ## Supabase setup
 1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
 2. Run `supabase/commerce.sql` in Supabase SQL Editor to create the cart, customer address and order-request tables and checkout function.
-3. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
+3. Run `supabase/address-district.sql` in Supabase SQL Editor to add the district field to existing saved delivery addresses.
+4. Run (or re-run after updates to the checkout function) `supabase/cart-quantity.sql` in Supabase SQL Editor to enable quantities, quantity-aware order totals, demo low-stock limits and demo order requests. Re-run this migration to allow demo/sample listings to reach checkout.
 4. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
 5. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
-6. First account: obtain its UUID from Authentication > Users, then set `profiles.is_admin=true` for that UUID in SQL Editor. Admins can approve listings by changing `listings.status` to `active`.
+7. First account: obtain its UUID from Authentication > Users, then set `profiles.is_admin=true` for that UUID in SQL Editor. Admins can approve listings by changing `listings.status` to `active`.
 
 ## Deploy on Cloudflare Pages
 - Connect this GitHub repository.
@@ -51,3 +52,5 @@ cp .env.example .env
 # Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env
 npm run dev
 ```
+
+The delivery-address state/district dropdown uses the [CodingMation India States & Districts dataset](https://github.com/CodingMation/indian-states-districts), distributed under the MIT License. Its license text is included at `src/data/INDIA_STATES_DISTRICTS_LICENSE.txt`. The directory should be checked periodically against the Government of India's [Local Government Directory](https://panchayat.gov.in/lgd/), which is maintained by the Ministry of Panchayati Raj.
