@@ -169,9 +169,8 @@ begin
         raise exception 'A product in your cart is no longer available';
       end if;
     else
-      if v_item_key like 'demo-%' or v_item_key like 'sample-%' then
-        raise exception 'Preview products cannot be ordered. Please choose a live seller listing.';
-      end if;
+      -- Demo/sample product keys are accepted as order requests that require
+      -- manual seller verification. No online payment is processed here.
       v_title := nullif(trim(v_item->>'title'), '');
       v_category := coalesce(v_item->>'category', '');
       v_condition := coalesce(v_item->>'condition', '');
