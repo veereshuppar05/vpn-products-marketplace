@@ -95,6 +95,18 @@ where id = '<marketplace-order-uuid>';
 
 Then an authenticated administrator can invoke the function with `{"action":"book","orderId":"<marketplace-order-uuid>"}`. The function creates the Shiprocket order, assigns the selected courier/AWB, schedules pickup, and attempts to generate the label and manifest. The tracking action is `{"action":"track","orderId":"<marketplace-order-uuid>"}` and is restricted to the buyer or an administrator.
 
+Example administrator booking request (run from a secure computer; do not put the access token in GitHub or frontend code):
+
+```bash
+curl -X POST "$SUPABASE_URL/functions/v1/shiprocket" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $ADMIN_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"book","orderId":"<marketplace-order-uuid>"}'
+```
+
+A buyer or administrator can request tracking with the same endpoint and their own valid access token, using `{"action":"track","orderId":"<marketplace-order-uuid>"}`.
+
 This project currently has no admin order-management screen; the confirmation/payment update and the admin booking call are manual server-side operations. No Shiprocket booking is made when a customer only submits an unconfirmed order request.
 
 ## Deploy on Cloudflare Pages
