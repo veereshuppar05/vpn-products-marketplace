@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 type Listing = {
@@ -189,6 +189,10 @@ export default function App() {
   const [category,setCategory] = useState(() => categoryFromPath() ?? "All");
   const [notice,setNotice] = useState("");
   const [authOpen,setAuthOpen] = useState(false);
+  const [profileMenuOpen,setProfileMenuOpen] = useState(false);
+  const [profileSettingsOpen,setProfileSettingsOpen] = useState(false);
+  const [profileNameDraft,setProfileNameDraft] = useState("");
+  const profileMenuRef = useRef<HTMLDivElement|null>(null);
   const [sellOpen,setSellOpen] = useState(false);
   const [mode,setMode] = useState<"login"|"signup">("login");
   const [email,setEmail] = useState("");
@@ -243,6 +247,22 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const closeOnOutside = (event:MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) setProfileMenuOpen(false);
+    };
+    const closeOnEscape = (event:KeyboardEvent) => {
+      if (event.key === "Escape") setProfileMenuOpen(false);
+    };
+    document.addEventListener("mousedown",closeOnOutside);
+    document.addEventListener("keydown",closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown",closeOnOutside);
+      document.removeEventListener("keydown",closeOnEscape);
+    };
+  }, [profileMenuOpen]);
 
   // Show a useful message when Supabase returns an expired or invalid email link.
   useEffect(() => {
@@ -532,7 +552,19 @@ export default function App() {
   };
 
   const [formCategory,setFormCategory] = useState("Mobiles & Tablets");
-  const signOut = async () => { await db?.auth.signOut(); setUser(null); setNotice("Signed out."); };
+  const signOut = async () => { setProfileMenuOpen(false); await db?.auth.signOut(); setUser(null); setNotice("Signed out."); };
+  const saveProfileSettings = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db || !user) { setNotice("Please sign in to update your profile."); return; }
+    const name = profileNameDraft.trim();
+    if (!name) { setNotice("Enter your profile name."); return; }
+    const {data,error} = await db.auth.updateUser({data:{full_name:name}});
+    if (error) { setNotice(error.message); return; }
+    if (data.user) setUser(data.user);
+    setProfileSettingsOpen(false);
+    setNotice("Profile name updated successfully.");
+  };
+
   const openBuy = () => {
     if (!user) {
       setMode("login");
@@ -623,8 +655,27 @@ export default function App() {
   const recentProductCards = renderProductCards(visible.slice(0,5),true);
 
 
+  const displayName = user?.user_metadata?.full_name?.trim() || user?.email?.split("@")[0] || user?.phone || "User";
+
   return <div className="site">
-    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user ? <button className="btn account-top signed-in" onClick={signOut}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 4v16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></span><span className="account-top-copy"><b>Sign out</b></span></button> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
+    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
+        <button type="button" className="profile-icon-button" aria-label={"Open profile menu for "+displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={()=>setProfileMenuOpen(value=>!value)}>
+          <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>
+        </button>
+        {profileMenuOpen && <div className="profile-dropdown" role="menu">
+          <div className="profile-dropdown-heading">
+            <span className="profile-avatar profile-avatar-large">{displayName.charAt(0).toUpperCase()}</span>
+            <span className="profile-dropdown-identity"><b>{displayName}</b><small>{user.email || user.phone || "Signed-in account"}</small></span>
+          </div>
+          <div className="profile-menu-divider"/>
+          <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>{setProfileNameDraft(displayName);setProfileMenuOpen(false);setProfileSettingsOpen(true);}}>
+            <span aria-hidden="true">⚙</span> Profile Settings
+          </button>
+          <button type="button" className="profile-menu-item profile-logout-item" role="menuitem" onClick={signOut}>
+            <span aria-hidden="true">↪</span> Logout
+          </button>
+        </div>}
+      </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
       {selectedProduct ? <section className="product-detail-page">
         <button className="detail-back" onClick={backToProducts}>← Back to products</button>
@@ -861,6 +912,18 @@ export default function App() {
       <span className="photo-lightbox-count">{activeProductImage+1} / {selectedProduct.image_urls?.length || 1}</span>
     </div>}
     {notice && <button className="notice" onClick={()=>setNotice("")}>{notice}　×</button>}
+    {profileSettingsOpen && user && <div className="overlay" onClick={()=>setProfileSettingsOpen(false)}>
+      <div className="modal profile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="profile-settings-title" onClick={e=>e.stopPropagation()}>
+        <button className="close" type="button" aria-label="Close profile settings" onClick={()=>setProfileSettingsOpen(false)}>×</button>
+        <h2 id="profile-settings-title">Profile Settings</h2>
+        <p className="auth-hint">Update the name displayed on your VPN Products and Services account.</p>
+        <form onSubmit={saveProfileSettings}>
+          <label>Profile Name<input required type="text" autoComplete="name" maxLength={80} value={profileNameDraft} onChange={e=>setProfileNameDraft(e.target.value)} placeholder="Enter your profile name"/></label>
+          <label>Registered Email or Phone<input type="text" readOnly value={user.email || user.phone || ""}/></label>
+          <button className="btn primary full">Save Changes</button>
+        </form>
+      </div>
+    </div>}
     {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{otpRequired?"Verify your phone number":mode==="login"?"Welcome back":"Create an account"}</h2>{otpRequired ? <form onSubmit={authenticate}><p className="auth-hint">Enter the SMS verification code sent to {pendingPhone}.</p><label>Verification code<input required type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code"/></label><button className="btn primary full">Verify phone</button></form> : <form onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email or Phone Number<input required type="text" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address or mobile number"/></label><label>Password<input required minLength={6} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={6} autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Use an email address or an Indian 10-digit mobile number. Phone registration requires SMS verification.</p>}</form>}{!otpRequired && <>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setConfirmPassword("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></>}</div></div>}
     {sellOpen && <div className="overlay" onClick={()=>setSellOpen(false)}><div className="modal wide" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSellOpen(false)}>×</button><h2>Post an item</h2><form onSubmit={submitListing}><label>Title<input required maxLength={90} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Category<select value={formCategory} onChange={e=>setFormCategory(e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label><label>Price in ₹<input required min="1" type="number" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>Description<textarea required minLength={20} maxLength={1500} rows={4} value={description} onChange={e=>setDescription(e.target.value)}/></label><label>Condition<select value={condition} onChange={e=>setCondition(e.target.value)}><option>Like New</option><option>Good</option><option>Fair</option><option>For Parts</option></select></label><div className="row"><label>City<input required value={city} onChange={e=>setCity(e.target.value)} placeholder="Bengaluru"/></label><label>State<input required value={state} onChange={e=>setState(e.target.value)} placeholder="Karnataka"/></label></div><label>WhatsApp / phone<input required inputMode="numeric" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="10-digit mobile number"/></label><label>Photos (up to 5)<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setPhotos(e.target.files)}/></label><button className="btn primary full">Submit for review</button><small>Listings appear publicly only after admin approval.</small></form></div></div>}
   </div>;
