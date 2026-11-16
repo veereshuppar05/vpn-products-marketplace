@@ -6,6 +6,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Responsive React + Vite website
 - Product categories, keyword and location search
 - Email/password sign-up and sign-in with Supabase Auth
+- Phone/password sign-up with SMS OTP verification (requires Phone provider and an SMS provider configured in Supabase)
 - Seller product submissions with up to five photos
 - New listings are held for review before becoming public
 - WhatsApp contact links for active listings
@@ -18,6 +19,14 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Demo products are shown when Supabase variables are not configured
 
 Online payments, escrow, in-app chat, OTP login, identity verification, and a full admin dashboard are not included. Checkout submits an order request only; it does not automatically notify sellers or collect payments. The customer can send the order reference to the business on WhatsApp for manual confirmation.
+
+## Phone registration setup
+1. In Supabase Dashboard, open Authentication > Sign In / Providers and enable Phone.
+2. Configure an SMS provider in Authentication settings (for example, Twilio, Vonage or MessageBird) if phone confirmations are enabled.
+3. Test with a controlled phone number first. Supabase supports fixed test OTP entries for development; do not use production customer numbers as test accounts.
+4. For Indian SMS delivery, confirm the provider's sender ID and applicable TRAI DLT registration/template requirements with the SMS provider.
+
+Phone sign-up in the website sends SMS through Supabase Auth. The website cannot enable the Phone provider or configure SMS credentials automatically.
 
 ## Supabase setup
 1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
