@@ -1000,19 +1000,13 @@ export default function App() {
   };
   const beginCartCheckout = () => {
     if (!cartItems.length) { setNotice("Your cart is empty. Add a product before checkout."); return; }
-    const orderableItems = cartItems.filter(item=>!isPreviewProduct(item));
-    const previewCount = cartItems.length - orderableItems.length;
-    if (!orderableItems.length) {
-      setNotice("Demo preview products can be saved in your cart, but they cannot be ordered. Add a live seller listing to continue.");
-      return;
-    }
-    setCheckoutItemIds(orderableItems.map(item=>item.id));
+    setCheckoutItemIds(cartItems.map(item=>item.id));
     setCheckoutStep("address");
     setAddressFormOpen(addresses.length===0);
     setSelectedAddressId(current=>addresses.some(address=>address.id===current)
       ? current : addresses.find(address=>address.is_default)?.id || addresses[0]?.id || "");
-    if (previewCount>0) {
-      setNotice(previewCount+" demo preview "+(previewCount===1?"item is":"items are")+" saved in your cart but excluded from this order request.");
+    if (cartItems.some(isPreviewProduct)) {
+      setNotice("Demo listings can be submitted as order requests. The seller must confirm availability, price and delivery before the purchase is final.");
     }
   };
   const saveCustomerAddress = async (event:FormEvent) => {
@@ -1150,13 +1144,12 @@ export default function App() {
               <button
                 type="button"
                 className="btn primary buy-button"
-                disabled={isPreviewProduct(item)}
                 onClick={event=>{event.stopPropagation();void buyNow(item);}}
               ><span className="purchase-button-label">Buy Now</span></button>
             </div>
             {item.contact_phone && <button type="button" className="contact-seller-link" onClick={event=>{event.stopPropagation();buyItem(item);}}>Contact seller on WhatsApp →</button>}
             {getStockMessage(item) && <span className="stock-badge">{getStockMessage(item)}</span>}
-            {isPreviewProduct(item) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
+            {isPreviewProduct(item) && <span className="demo-tag">Demo listing · order request requires seller confirmation</span>}
           </div>
         </article>
       ))}
@@ -1243,7 +1236,7 @@ export default function App() {
                   <strong>Item total: {money(Number(item.price)*getCartQuantity(item))}</strong>
                   {getStockMessage(item) && <span className="stock-badge cart-stock-badge">{getStockMessage(item)}</span>}
                   <span className="cart-page-seller">Seller: {item.seller_name || "Marketplace seller"}</span>
-                  {isPreviewProduct(item) && <span className="cart-preview-label">Demo preview · saved in cart only</span>}
+                  {isPreviewProduct(item) && <span className="cart-preview-label">Demo listing · seller must confirm availability and price</span>}
                 </div>
                 <button type="button" className="commerce-remove-button" onClick={()=>void removeCartItem(item.id)}>Remove</button>
               </article>)}
@@ -1254,7 +1247,7 @@ export default function App() {
               <div className="cart-summary-row"><span>Items ({cartQuantityCount})</span><b>{money(cartSubtotal)}</b></div>
               <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
               <div className="cart-summary-total"><span>Subtotal</span><strong>{money(cartSubtotal)}</strong></div>
-              <p className="commerce-note">Delivery charges and final availability are confirmed by the seller. Demo preview products can be saved in your cart but are excluded from order requests.</p>
+              <p className="commerce-note">Demo listings can be submitted as order requests. The seller must confirm actual availability, price and delivery charges before the purchase is final.</p>
               <button className="btn primary full cart-page-checkout" type="button" disabled={cartItems.every(isPreviewProduct)} onClick={beginCartCheckout}>Proceed to checkout →</button>
               {cartItems.every(isPreviewProduct) && <small className="cart-preview-checkout-note">Add a live seller listing to continue to checkout.</small>}
               <div className="cart-page-secure-note"><span aria-hidden="true">✓</span> Your cart is saved to your account</div>
@@ -1336,7 +1329,7 @@ export default function App() {
               <div className="cart-summary-row"><span>Products ({checkoutItems.length})</span><b>{money(checkoutSubtotal)}</b></div>
               <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
               <div className="cart-summary-total"><span>Subtotal</span><strong>{money(checkoutSubtotal)}</strong></div>
-              <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. Availability, delivery charges and payment will be confirmed with you. No online payment is collected on this website.</p>
+              <p className="commerce-note commerce-important-note">This submits an order request for seller confirmation. Demo listings are sample offers, so the seller must confirm the actual item, availability and final price. Delivery charges and payment arrangements will also be confirmed with you. No online payment is collected on this website.</p>
               <button className="btn primary full cart-page-checkout" type="button" disabled={commerceSaving || !chosenAddress || checkoutItems.length===0} onClick={()=>void placeOrderRequest()}>{commerceSaving?"Submitting order request…":"Place order request"}</button>
             </aside>
           </div>
@@ -1345,7 +1338,7 @@ export default function App() {
           <span className="commerce-success-mark" aria-hidden="true">✓</span>
           <span className="eyebrow commerce-eyebrow">REQUEST SUBMITTED</span>
           <h1>Thank you for your order request!</h1>
-          <p>Your order request is saved as pending confirmation. Product availability, delivery charges and payment arrangements must be confirmed before the sale is finalised.</p>
+          <p>Your order request is saved as pending confirmation. For demo listings, the seller must confirm the actual product, availability and price. Delivery charges and payment arrangements must also be confirmed before the sale is finalised.</p>
           {completedOrderId && <div className="commerce-order-reference">Order request ID <b>{completedOrderId}</b></div>}
           <p className="commerce-note">No online payment has been taken. For quickest follow-up, send this request reference to our team on WhatsApp.</p>
           <a className="btn primary commerce-whatsapp-followup" href={"https://wa.me/919916140898?text="+encodeURIComponent("Hello VPN Products and Services, please confirm my order request "+completedOrderId+".")} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp</a>
@@ -1406,10 +1399,10 @@ export default function App() {
             {getStockMessage(selectedProduct) && <span className="stock-badge detail-stock-badge">{getStockMessage(selectedProduct)}</span>}
             <div className="detail-buy-actions">
               <button className="btn light detail-cart-button" type="button" disabled={getCartStockLimit(selectedProduct)===0} onClick={()=>void addToCart(selectedProduct)}><span className="purchase-button-label">Add to Cart</span></button>
-              <button className="btn primary detail-buy-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void buyNow(selectedProduct)}><span className="purchase-button-label">Buy Now</span></button>
+              <button className="btn primary detail-buy-button" type="button" disabled={getCartStockLimit(selectedProduct)===0} onClick={()=>void buyNow(selectedProduct)}><span className="purchase-button-label">Buy Now</span></button>
             </div>
             {selectedProduct.contact_phone && <button type="button" className="contact-seller-link" onClick={()=>buyItem(selectedProduct)}>Contact seller on WhatsApp →</button>}
-            {isPreviewProduct(selectedProduct) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
+            {isPreviewProduct(selectedProduct) && <span className="demo-tag">Demo listing · order request requires seller confirmation</span>}
             <div className="detail-condition-note">
               <b>Condition and inspection notes</b>
               <p>{selectedProduct.id==="samsung-galaxy-a12-6gb-128gb"
