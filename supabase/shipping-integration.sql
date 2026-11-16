@@ -7,7 +7,8 @@ alter table public.listings
   add column if not exists package_weight_kg numeric(8,3),
   add column if not exists package_length_cm numeric(8,2),
   add column if not exists package_breadth_cm numeric(8,2),
-  add column if not exists package_height_cm numeric(8,2);
+  add column if not exists package_height_cm numeric(8,2),
+  add column if not exists is_test_product boolean not null default false;
 
 alter table public.marketplace_orders
   add column if not exists delivery_fee numeric(12,2) not null default 0,
@@ -25,7 +26,8 @@ alter table public.marketplace_orders
   add column if not exists shipping_tracking_url text,
   add column if not exists shipping_label_url text,
   add column if not exists shipping_manifest_url text,
-  add column if not exists shipping_error text;
+  add column if not exists shipping_error text,
+  add column if not exists is_test_order boolean not null default false;
 
 create table if not exists public.shipping_quotes (
   id uuid primary key default gen_random_uuid(),
@@ -100,10 +102,13 @@ declare
   v_quantity integer := 1;
   v_total numeric(12,2) := 0;
   v_manual boolean;
+  v_is_test_product boolean := false;
   v_courier jsonb;
   v_delivery_fee numeric(12,2);
   v_shipping_package jsonb;
   v_shipping_eta text;
+  v_is_test_product boolean := false;
+  v_is_test_order boolean := false;
 begin
   if v_user_id is null then
     raise exception 'Please sign in before placing an order request';
@@ -145,11 +150,12 @@ begin
     if v_item_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
       v_listing_id := v_item_key::uuid;
       select l.title, l.category, l.condition, l.seller_name, l.price,
-             coalesce(l.image_urls->>0, '')
-        into v_title, v_category, v_condition, v_seller_name, v_price, v_image_url
+             coalesce(l.image_urls->>0, ''), l.is_test_product
+        into v_title, v_category, v_condition, v_seller_name, v_price, v_image_url, v_is_test_product
       from public.listings l
       where l.id = v_listing_id and l.status = 'active' and l.seller_id <> v_user_id
       for update;
+      v_is_test_order := v_is_test_order or v_is_test_product;
       if not found then
         raise exception 'A product in your cart is no longer available';
       end if;
@@ -176,6 +182,19 @@ begin
     end if;
     v_total := v_total + (v_price * v_quantity);
   end loop;
+
+  if v_is_test_order and exists (
+    select 1
+    from jsonb_array_elements(p_items) item
+    where not exists (
+      select 1 from public.listings l
+      where l.id = (item->>'id')::uuid
+        and l.is_test_product = true
+        and l.status = 'active'
+    )
+  ) then
+    raise exception 'The ₹1 test listing must be checked out by itself, not mixed with normal products.';
+  end if;
 
   -- Validate the courier choice against a recent server-generated Shiprocket quote.
   select courier.value, (courier.value->>'rate')::numeric(12,2), q.package_details
@@ -204,12 +223,12 @@ begin
     buyer_id, delivery_address, subtotal, delivery_fee, status,
     shipping_provider, shipping_quote_id, shipping_courier_id,
     shipping_courier_name, shipping_eta, shipping_package,
-    shipping_status, payment_status
+    shipping_status, payment_status, is_test_order
   ) values (
     v_user_id, v_address, v_total, v_delivery_fee, 'pending_confirmation',
     'shiprocket', p_shipping_quote_id, p_courier_id,
     v_courier->>'courier_name', v_shipping_eta, v_shipping_package,
-    'quote_selected', 'pending'
+    'quote_selected', 'pending', v_is_test_order
   )
   returning id into v_order_id;
 
@@ -226,8 +245,8 @@ begin
     if v_item_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
       v_listing_id := v_item_key::uuid;
       select l.title, l.category, l.condition, l.seller_name, l.price,
-             coalesce(l.image_urls->>0, '')
-        into v_title, v_category, v_condition, v_seller_name, v_price, v_image_url
+             coalesce(l.image_urls->>0, ''), l.is_test_product
+        into v_title, v_category, v_condition, v_seller_name, v_price, v_image_url, v_is_test_product
       from public.listings l
       where l.id = v_listing_id and l.status = 'active' and l.seller_id <> v_user_id;
       v_manual := false;
@@ -242,10 +261,10 @@ begin
 
     insert into public.marketplace_order_items (
       order_id, product_key, product_title, category, condition,
-      unit_price, quantity, seller_name, image_url, manual_verification
+      unit_price, quantity, seller_name, image_url, manual_verification, is_test_product
     ) values (
       v_order_id, v_item_key, v_title, v_category, v_condition,
-      v_price, v_quantity, v_seller_name, v_image_url, v_manual
+      v_price, v_quantity, v_seller_name, v_image_url, v_manual, v_is_test_product
     );
   end loop;
 
