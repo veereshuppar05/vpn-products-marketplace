@@ -2352,3 +2352,39 @@ footer a:hover { color: var(--orange-dark); }
     max-width: 520px;
   }
 }
+
+
+/* Six homepage service cards, including local print and application help */
+.services .service-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+.services .service-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.services .service-note {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.services .service-card .service-link {
+  margin-top: auto;
+  align-self: flex-start;
+}
+@media (max-width: 1100px) {
+  .services .service-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .services .service-grid {
+    grid-template-columns: 1fr;
+  }
+  .services .service-note {
+    font-size: 10px;
+  }
+}
