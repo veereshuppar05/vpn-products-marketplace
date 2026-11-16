@@ -4670,3 +4670,14 @@ footer a:hover { color: var(--orange-dark); }
 @media (max-width: 560px) {
   .cart-page-heading .checkout-address-title { font-size: 22px !important; }
 }
+
+
+/* Smaller heading for the Shopping Cart page only. */
+.cart-page-heading .shopping-cart-title {
+  font-size: clamp(23px, 2.5vw, 29px) !important;
+  line-height: 1.18 !important;
+  letter-spacing: -.45px;
+}
+@media (max-width: 560px) {
+  .cart-page-heading .shopping-cart-title { font-size: 23px !important; }
+}
