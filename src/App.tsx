@@ -190,8 +190,16 @@ export default function App() {
   const [notice,setNotice] = useState("");
   const [authOpen,setAuthOpen] = useState(false);
   const [profileMenuOpen,setProfileMenuOpen] = useState(false);
-  const [profileSettingsOpen,setProfileSettingsOpen] = useState(false);
+  const [profilePanel,setProfilePanel] = useState<"view"|"edit"|"password"|"details"|null>(null);
   const [profileNameDraft,setProfileNameDraft] = useState("");
+  const [avatarFile,setAvatarFile] = useState<File|null>(null);
+  const [newPassword,setNewPassword] = useState("");
+  const [confirmNewPassword,setConfirmNewPassword] = useState("");
+  const [profileEmailDraft,setProfileEmailDraft] = useState("");
+  const [profilePhoneDraft,setProfilePhoneDraft] = useState("");
+  const [pendingPhoneChange,setPendingPhoneChange] = useState("");
+  const [phoneChangeCode,setPhoneChangeCode] = useState("");
+  const [profileSaving,setProfileSaving] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement|null>(null);
   const [sellOpen,setSellOpen] = useState(false);
   const [mode,setMode] = useState<"login"|"signup">("login");
@@ -552,17 +560,130 @@ export default function App() {
   };
 
   const [formCategory,setFormCategory] = useState("Mobiles & Tablets");
-  const signOut = async () => { setProfileMenuOpen(false); await db?.auth.signOut(); setUser(null); setNotice("Signed out."); };
+  const closeProfilePanel = () => {
+    setProfilePanel(null);
+    setAvatarFile(null);
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setPhoneChangeCode("");
+    setPendingPhoneChange("");
+  };
+  const openProfilePanel = (panel:"view"|"edit"|"password"|"details") => {
+    if (!user) return;
+    setProfileMenuOpen(false);
+    setProfileNameDraft(user.user_metadata?.full_name?.trim() || user.email?.split("@")[0] || user.phone || "User");
+    setProfileEmailDraft(user.email || "");
+    setProfilePhoneDraft(user.phone || "");
+    setAvatarFile(null);
+    setProfilePanel(panel);
+  };
+  const signOut = async () => {
+    setProfileMenuOpen(false);
+    closeProfilePanel();
+    const {error} = db ? await db.auth.signOut() : {error:null};
+    if (error) { setNotice(error.message); return; }
+    setUser(null);
+    setNotice("Signed out successfully.");
+  };
   const saveProfileSettings = async (event:FormEvent) => {
     event.preventDefault();
     if (!db || !user) { setNotice("Please sign in to update your profile."); return; }
     const name = profileNameDraft.trim();
     if (!name) { setNotice("Enter your profile name."); return; }
-    const {data,error} = await db.auth.updateUser({data:{full_name:name}});
+    if (avatarFile && (!["image/jpeg","image/png","image/webp"].includes(avatarFile.type) || avatarFile.size > 4*1024*1024)) {
+      setNotice("Choose a JPG, PNG or WEBP profile photo under 4 MB.");
+      return;
+    }
+    setProfileSaving(true);
+    let uploadedAvatarPath:string|null = null;
+    try {
+      let avatarUrl = user.user_metadata?.avatar_url || "";
+      if (avatarFile) {
+        const extension = avatarFile.type === "image/png" ? "png" : avatarFile.type === "image/webp" ? "webp" : "jpg";
+        uploadedAvatarPath = user.id + "/profile/avatar-" + crypto.randomUUID() + "." + extension;
+        const {error:uploadError} = await db.storage.from("listing-images").upload(uploadedAvatarPath,avatarFile,{
+          cacheControl:"3600",upsert:false,contentType:avatarFile.type
+        });
+        if (uploadError) throw uploadError;
+        avatarUrl = db.storage.from("listing-images").getPublicUrl(uploadedAvatarPath).data.publicUrl;
+      }
+      const {data,error} = await db.auth.updateUser({data:{full_name:name,avatar_url:avatarUrl}});
+      if (error) {
+        if (uploadedAvatarPath) await db.storage.from("listing-images").remove([uploadedAvatarPath]);
+        throw error;
+      }
+      if (data.user) setUser(data.user);
+      const previousAvatarUrl = user.user_metadata?.avatar_url;
+      const marker = "/storage/v1/object/public/listing-images/";
+      if (uploadedAvatarPath && typeof previousAvatarUrl === "string" && previousAvatarUrl.includes(marker)) {
+        const previousPath = decodeURIComponent(previousAvatarUrl.split(marker)[1].split("?")[0]);
+        if (previousPath.startsWith(user.id + "/profile/") && previousPath !== uploadedAvatarPath) {
+          await db.storage.from("listing-images").remove([previousPath]);
+        }
+      }
+      closeProfilePanel();
+      setNotice("Profile updated successfully.");
+    } catch (error:any) {
+      setNotice(error?.message || "Could not update your profile. Please try again.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+  const changeAccountPassword = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db || !user) { setNotice("Please sign in to change your password."); return; }
+    if (newPassword.length < 8) { setNotice("Use a password with at least 8 characters."); return; }
+    if (newPassword !== confirmNewPassword) { setNotice("New password and confirmation do not match."); return; }
+    setProfileSaving(true);
+    const {error} = await db.auth.updateUser({password:newPassword});
+    setProfileSaving(false);
+    if (error) { setNotice(error.message); return; }
+    closeProfilePanel();
+    setNotice("Your password has been changed successfully.");
+  };
+  const updateAccountEmail = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db || !user) { setNotice("Please sign in to update account details."); return; }
+    const nextEmail = profileEmailDraft.trim();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)) { setNotice("Enter a valid email address."); return; }
+    if (nextEmail.toLowerCase() === (user.email || "").toLowerCase()) { setNotice("That is already your registered email address."); return; }
+    setProfileSaving(true);
+    const {error} = await db.auth.updateUser({email:nextEmail});
+    setProfileSaving(false);
+    if (error) { setNotice(error.message); return; }
+    setNotice("A confirmation link was sent to your new email address. Your email changes after you confirm it.");
+  };
+  const updateAccountPhone = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db || !user) { setNotice("Please sign in to update account details."); return; }
+    const raw = profilePhoneDraft.trim();
+    const digits = raw.replace(/\\D/g,"");
+    const nextPhone = raw.startsWith("+") ? "+" + digits
+      : digits.length === 10 ? "+91" + digits
+      : digits.length === 11 && digits.startsWith("0") ? "+91" + digits.slice(1)
+      : digits.length === 12 && digits.startsWith("91") ? "+" + digits : "";
+    if (!nextPhone || digits.length < 10 || digits.length > 12) { setNotice("Enter a valid Indian mobile number with country code if needed."); return; }
+    if (nextPhone === user.phone) { setNotice("That is already your registered phone number."); return; }
+    setProfileSaving(true);
+    const {error} = await db.auth.updateUser({phone:nextPhone});
+    setProfileSaving(false);
+    if (error) { setNotice(error.message); return; }
+    setPendingPhoneChange(nextPhone);
+    setPhoneChangeCode("");
+    setNotice("A verification code has been sent to " + nextPhone + ". Enter it below to confirm the new number.");
+  };
+  const verifyAccountPhoneChange = async (event:FormEvent) => {
+    event.preventDefault();
+    if (!db || !pendingPhoneChange || !phoneChangeCode.trim()) { setNotice("Enter the verification code sent to your new phone number."); return; }
+    setProfileSaving(true);
+    const {data,error} = await db.auth.verifyOtp({phone:pendingPhoneChange,token:phoneChangeCode.trim(),type:"phone_change"});
+    setProfileSaving(false);
     if (error) { setNotice(error.message); return; }
     if (data.user) setUser(data.user);
-    setProfileSettingsOpen(false);
-    setNotice("Profile name updated successfully.");
+    setPendingPhoneChange("");
+    setPhoneChangeCode("");
+    setProfilePhoneDraft(data.user?.phone || pendingPhoneChange);
+    setNotice("Phone number updated and verified successfully.");
   };
 
   const openBuy = () => {
@@ -660,17 +781,27 @@ export default function App() {
   return <div className="site">
     <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
         <button type="button" className="profile-icon-button" aria-label={"Open profile menu for "+displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={()=>setProfileMenuOpen(value=>!value)}>
-          <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>
+          {user.user_metadata?.avatar_url ? <img className="profile-avatar profile-avatar-image" src={user.user_metadata.avatar_url} alt="" /> : <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>}
         </button>
         {profileMenuOpen && <div className="profile-dropdown" role="menu">
           <div className="profile-dropdown-heading">
-            <span className="profile-avatar profile-avatar-large">{displayName.charAt(0).toUpperCase()}</span>
+            {user.user_metadata?.avatar_url ? <img className="profile-avatar profile-avatar-large profile-avatar-image" src={user.user_metadata.avatar_url} alt="" /> : <span className="profile-avatar profile-avatar-large">{displayName.charAt(0).toUpperCase()}</span>}
             <span className="profile-dropdown-identity"><b>{displayName}</b><small>{user.email || user.phone || "Signed-in account"}</small></span>
           </div>
           <div className="profile-menu-divider"/>
-          <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>{setProfileNameDraft(displayName);setProfileMenuOpen(false);setProfileSettingsOpen(true);}}>
-            <span aria-hidden="true">⚙</span> Profile Settings
+          <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("view")}>
+            <span aria-hidden="true">♙</span> My Profile
           </button>
+          <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("edit")}>
+            <span aria-hidden="true">✎</span> Edit Profile
+          </button>
+          <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("details")}>
+            <span aria-hidden="true">▤</span> Account Details
+          </button>
+          <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("password")}>
+            <span aria-hidden="true">⌑</span> Change Password
+          </button>
+          <div className="profile-menu-divider"/>
           <button type="button" className="profile-menu-item profile-logout-item" role="menuitem" onClick={signOut}>
             <span aria-hidden="true">↪</span> Logout
           </button>
@@ -912,16 +1043,67 @@ export default function App() {
       <span className="photo-lightbox-count">{activeProductImage+1} / {selectedProduct.image_urls?.length || 1}</span>
     </div>}
     {notice && <button className="notice" onClick={()=>setNotice("")}>{notice}　×</button>}
-    {profileSettingsOpen && user && <div className="overlay" onClick={()=>setProfileSettingsOpen(false)}>
-      <div className="modal profile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="profile-settings-title" onClick={e=>e.stopPropagation()}>
-        <button className="close" type="button" aria-label="Close profile settings" onClick={()=>setProfileSettingsOpen(false)}>×</button>
-        <h2 id="profile-settings-title">Profile Settings</h2>
-        <p className="auth-hint">Update the name displayed on your VPN Products and Services account.</p>
-        <form onSubmit={saveProfileSettings}>
-          <label>Profile Name<input required type="text" autoComplete="name" maxLength={80} value={profileNameDraft} onChange={e=>setProfileNameDraft(e.target.value)} placeholder="Enter your profile name"/></label>
-          <label>Registered Email or Phone<input type="text" readOnly value={user.email || user.phone || ""}/></label>
-          <button className="btn primary full">Save Changes</button>
-        </form>
+    {profilePanel && user && <div className="overlay" onClick={closeProfilePanel}>
+      <div className="modal wide profile-settings-modal" role="dialog" aria-modal="true" aria-labelledby="profile-panel-title" onClick={e=>e.stopPropagation()}>
+        <button className="close" type="button" aria-label="Close profile window" onClick={closeProfilePanel}>×</button>
+        {profilePanel === "view" && <>
+          <h2 id="profile-panel-title">My Profile</h2>
+          <div className="profile-view-card">
+            {user.user_metadata?.avatar_url ? <img className="profile-view-avatar" src={user.user_metadata.avatar_url} alt="Profile"/> : <span className="profile-view-avatar profile-view-avatar-placeholder">{displayName.charAt(0).toUpperCase()}</span>}
+            <div className="profile-view-identity"><b>{displayName}</b><small>VPN Products and Services member</small></div>
+          </div>
+          <div className="profile-detail-list">
+            <div><span>Full name</span><b>{displayName}</b></div>
+            <div><span>Email address</span><b>{user.email || "Not added"}</b></div>
+            <div><span>Phone number</span><b>{user.phone || "Not added"}</b></div>
+            <div><span>Member since</span><b>{user.created_at ? new Date(user.created_at).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : "—"}</b></div>
+          </div>
+          <button className="btn primary full profile-panel-primary" type="button" onClick={()=>openProfilePanel("edit")}>Edit Profile</button>
+          <button className="btn light full profile-panel-secondary" type="button" onClick={()=>openProfilePanel("details")}>Manage Account Details</button>
+          <button className="btn light full profile-panel-secondary" type="button" onClick={()=>openProfilePanel("password")}>Change Password</button>
+        </>}
+        {profilePanel === "edit" && <>
+          <h2 id="profile-panel-title">Edit Profile</h2>
+          <p className="auth-hint">Update the name and profile photo shown on your account.</p>
+          <form onSubmit={saveProfileSettings}>
+            <div className="profile-photo-editor">
+              {avatarFile ? <span className="profile-view-avatar profile-view-avatar-placeholder">{displayName.charAt(0).toUpperCase()}</span>
+                : user.user_metadata?.avatar_url ? <img className="profile-view-avatar" src={user.user_metadata.avatar_url} alt="Current profile"/>
+                : <span className="profile-view-avatar profile-view-avatar-placeholder">{displayName.charAt(0).toUpperCase()}</span>}
+              <label className="profile-photo-upload">Profile Photo<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setAvatarFile(e.target.files?.[0] || null)}/></label>
+            </div>
+            {avatarFile && <small className="profile-file-name">Selected: {avatarFile.name}</small>}
+            <label>Profile Name<input required type="text" autoComplete="name" maxLength={80} value={profileNameDraft} onChange={e=>setProfileNameDraft(e.target.value)} placeholder="Enter your profile name"/></label>
+            <button className="btn primary full" disabled={profileSaving}>{profileSaving ? "Saving…" : "Save Profile"}</button>
+          </form>
+        </>}
+        {profilePanel === "password" && <>
+          <h2 id="profile-panel-title">Change Password</h2>
+          <p className="auth-hint">Choose a strong password with at least 8 characters.</p>
+          <form onSubmit={changeAccountPassword}>
+            <label>New Password<input required minLength={8} autoComplete="new-password" type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Enter new password"/></label>
+            <label>Confirm New Password<input required minLength={8} autoComplete="new-password" type="password" value={confirmNewPassword} onChange={e=>setConfirmNewPassword(e.target.value)} placeholder="Re-enter new password"/></label>
+            <button className="btn primary full" disabled={profileSaving}>{profileSaving ? "Updating…" : "Update Password"}</button>
+          </form>
+        </>}
+        {profilePanel === "details" && <>
+          <h2 id="profile-panel-title">Account Details</h2>
+          <p className="auth-hint">Change your registered email address or phone number. Supabase will ask you to verify the new contact detail.</p>
+          <form onSubmit={updateAccountEmail}>
+            <label>Registered Email<input type="email" autoComplete="email" value={profileEmailDraft} onChange={e=>setProfileEmailDraft(e.target.value)} placeholder="Enter email address"/></label>
+            <button className="btn light full" disabled={profileSaving}>{profileSaving ? "Please wait…" : "Update Email"}</button>
+          </form>
+          <div className="profile-panel-divider"/>
+          <form onSubmit={pendingPhoneChange ? verifyAccountPhoneChange : updateAccountPhone}>
+            <label>{pendingPhoneChange ? "Verification code sent to " + pendingPhoneChange : "Registered Phone Number"}
+              {pendingPhoneChange
+                ? <input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={phoneChangeCode} onChange={e=>setPhoneChangeCode(e.target.value.replace(/\\D/g,"").slice(0,6))} placeholder="Enter SMS verification code"/>
+                : <input type="tel" autoComplete="tel" value={profilePhoneDraft} onChange={e=>setProfilePhoneDraft(e.target.value)} placeholder="10-digit mobile number"/>}
+            </label>
+            <button className="btn primary full" disabled={profileSaving}>{profileSaving ? "Please wait…" : pendingPhoneChange ? "Verify New Phone Number" : "Update Phone Number"}</button>
+            {pendingPhoneChange && <button className="switch" type="button" onClick={()=>{setPendingPhoneChange("");setPhoneChangeCode("");}}>Cancel phone verification</button>}
+          </form>
+        </>}
       </div>
     </div>}
     {authOpen && <div className="overlay"><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setAuthOpen(false)}>×</button><h2>{otpRequired?"Verify your phone number":mode==="login"?"Welcome back":"Create an account"}</h2>{otpRequired ? <form onSubmit={authenticate}><p className="auth-hint">Enter the SMS verification code sent to {pendingPhone}.</p><label>Verification code<input required type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="6-digit code"/></label><button className="btn primary full">Verify phone</button></form> : <form onSubmit={authenticate}>{mode==="signup" && <label>Full Name<input required type="text" autoComplete="name" maxLength={80} value={fullName} onChange={e=>setFullName(e.target.value)} placeholder="Enter your full name"/></label>}<label>Email or Phone Number<input required type="text" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email address or mobile number"/></label><label>Password<input required minLength={6} autoComplete={mode==="login"?"current-password":"new-password"} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters"/></label>{mode==="signup" && <label>Confirm Password<input required minLength={6} autoComplete="new-password" type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Re-enter your password"/></label>}<button className="btn primary full">{mode==="login"?"Sign in":"Create account"}</button>{mode==="signup" && <p className="auth-hint">Use an email address or an Indian 10-digit mobile number. Phone registration requires SMS verification.</p>}</form>}{!otpRequired && <>{mode==="login" && <button type="button" className="switch" onClick={resendEmailConfirmation}>Resend confirmation email</button>}<button className="switch" onClick={()=>{setMode(mode==="login"?"signup":"login");setConfirmPassword("");}}>{mode==="login"?"New user? Create an account":"Already registered? Sign in"}</button></>}</div></div>}
