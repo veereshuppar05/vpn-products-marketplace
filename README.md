@@ -9,14 +9,19 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Seller product submissions with up to five photos
 - New listings are held for review before becoming public
 - WhatsApp contact links for active listings
+- Signed-in customer cart with add/remove and saved cart contents
+- Saved delivery addresses with default address selection
+- Checkout with address selection, order review and order-request confirmation
+- Order requests stored for seller confirmation
 - Public product image storage with seller-scoped upload policies
 - Demo products are shown when Supabase variables are not configured
 
-This initial release does not include online payments, escrow, in-app chat, OTP login, identity verification, or a full admin dashboard.
+Online payments, escrow, in-app chat, OTP login, identity verification, and a full admin dashboard are not included. Checkout submits an order request only; seller availability, delivery charges and payment arrangements must be confirmed separately.
 
 ## Supabase setup
-1. Run the SQL file at `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
-2. Set these environment variables in Cloudflare Pages:
+1. Run `supabase/schema.sql` in Supabase SQL Editor (already completed in the current project).
+2. Run `supabase/commerce.sql` in Supabase SQL Editor to create the cart, customer address and order-request tables and checkout function.
+3. Set these environment variables in Cloudflare Pages:
    - `VITE_SUPABASE_URL=https://huvpbhmqeijhksjfkoqa.supabase.co` (verify under Supabase Settings > Data API)
    - `VITE_SUPABASE_PUBLISHABLE_KEY=<your sb_publishable key>`
 3. Never put a Supabase secret/service_role key in frontend code, GitHub, or browser-visible settings.
