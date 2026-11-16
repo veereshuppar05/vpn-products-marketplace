@@ -507,7 +507,26 @@ export default function App() {
       const result = isEmail
         ? await db.auth.signUp({email:identifier,password,options:{data:{full_name:fullName.trim()},emailRedirectTo:authRedirectUrl}})
         : await db.auth.signUp({phone:authPhone,password,options:{data:{full_name:fullName.trim()}}});
-      if (result.error) { setNotice(result.error.message); return; }
+      if (result.error) {
+        const authError = result.error.message.toLowerCase();
+        if (/already registered|email_exists|phone_exists/.test(authError)) {
+          setMode("login");
+          setNotice("This email address or phone number is already registered. Please sign in, or use a different email address or phone number.");
+        } else if (/rate limit|too many requests|email rate limit/.test(authError)) {
+          setNotice("Registration email limit reached. Please wait before trying again, or configure a custom SMTP email provider in Supabase.");
+        } else {
+          setNotice(result.error.message);
+        }
+        return;
+      }
+      // Supabase may return an obfuscated user with no identities for an
+      // existing email when email confirmation is enabled. No new account
+      // was created in that case, so send the customer to the Login form.
+      if (isEmail && !result.data.session && result.data.user?.identities?.length === 0) {
+        setMode("login");
+        setNotice("This email address is already registered. Please sign in with your existing account or use a different email address.");
+        return;
+      }
       if (!isEmail && !result.data.session) {
         setPendingPhone(authPhone); setOtpCode(""); setOtpRequired(true);
         setNotice("A verification code has been sent by SMS. Enter it to finish creating your account.");
