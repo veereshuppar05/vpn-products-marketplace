@@ -500,52 +500,6 @@ Deno.serve(async (request: Request) => {
       const address = order.delivery_address || {};
       const customer = splitCustomerName(String(address.full_name || buyer.user_metadata?.full_name || "Customer"));
       const packageDetails = order.shipping_package;
-      const returnOrderCode = "R" + String(returnRequest.id).replace(/-/g, "").slice(0, 19);
-      const returnPayload = {
-        order_id: returnOrderCode,
-        order_date: new Date().toISOString().slice(0, 10),
-        payment_method: "Prepaid",
-        sub_total: Number(order.subtotal),
-        pickup_customer_name: customer.first,
-        pickup_last_name: customer.last,
-        pickup_address: String(address.address_line1 || ""),
-        pickup_address_2: [address.address_line2, address.landmark, address.district].filter(Boolean).join(", "),
-        pickup_city: String(address.city || ""),
-        pickup_state: String(address.state || ""),
-        pickup_country: "India",
-        pickup_pincode: String(address.pincode || ""),
-        pickup_email: buyer.email || "",
-        pickup_phone: String(address.phone || ""),
-        shipping_customer_name: "VPN Products and Services",
-        shipping_address: shopAddress,
-        shipping_city: shopCity,
-        shipping_state: shopState,
-        shipping_country: "India",
-        shipping_pincode: shopPostcode,
-        shipping_phone: shopPhone,
-        shipping_email: secret("SHIPROCKET_EMAIL"),
-        order_items: orderItems.map((item: any) => ({
-          name: item.product_title,
-          sku: String(item.product_key),
-          units: Number(item.quantity),
-          selling_price: Number(item.unit_price),
-          discount: 0,
-          tax: 0,
-          hsn: "",
-        })),
-        weight: Number(packageDetails.weight_kg),
-        length: Number(packageDetails.length_cm),
-        breadth: Number(packageDetails.breadth_cm),
-        height: Number(packageDetails.height_cm),
-        declared_value: Math.round(Number(order.subtotal)),
-        is_return: 1,
-      };
-      const created = await sr("/orders/create/return", "POST", returnPayload);
-      const returnOrderId = Number(deepValue(created, ["order_id"]));
-      const returnShipmentId = Number(deepValue(created, ["shipment_id"]));
-      if (!Number.isFinite(returnOrderId) || !Number.isFinite(returnShipmentId)) {
-        throw new Error("Shiprocket did not return the reverse-order and shipment IDs. Check the Shiprocket panel before retrying.");
-      }
       const returnParams = new URLSearchParams({
         pickup_postcode: String(address.pincode || ""),
         delivery_postcode: shopPostcode,
@@ -557,6 +511,7 @@ Deno.serve(async (request: Request) => {
         declared_value: String(Math.round(Number(order.subtotal))),
         is_return: "1",
       });
+      // Check reverse-pickup serviceability before creating a Shiprocket return order.
       const serviceability = await sr("/courier/serviceability/?" + returnParams.toString());
       const available = serviceability?.data?.available_courier_companies || serviceability?.available_courier_companies || [];
       const couriers = (Array.isArray(available) ? available : [])
@@ -567,12 +522,81 @@ Deno.serve(async (request: Request) => {
         .filter((item: any) => Number.isInteger(item.courier_id) && item.courier_id > 0 && Number.isFinite(item.rate) && item.rate >= 0)
         .sort((a: any, b: any) => a.rate - b.rate);
       if (!couriers.length) throw new Error("No reverse-pickup courier is available for the customer's PIN code.");
-      const assigned = await sr("/courier/assign/awb", "POST", {
-        shipment_id: returnShipmentId,
-        courier_id: couriers[0].courier_id,
-      });
-      const awb = String(deepValue(assigned, ["awb_code"]) || "");
-      if (!awb) throw new Error("The return order was created but Shiprocket did not return a reverse-pickup AWB.");
+
+      let returnOrderId = Number(returnRequest.shiprocket_return_order_id || 0);
+      let returnShipmentId = Number(returnRequest.shiprocket_return_shipment_id || 0);
+      if (!returnShipmentId) {
+        const returnOrderCode = "R" + String(returnRequest.id).replace(/-/g, "").slice(0, 19);
+        const returnPayload = {
+          order_id: returnOrderCode,
+          order_date: new Date().toISOString().slice(0, 10),
+          payment_method: "Prepaid",
+          sub_total: Number(order.subtotal),
+          pickup_customer_name: customer.first,
+          pickup_last_name: customer.last,
+          pickup_address: String(address.address_line1 || ""),
+          pickup_address_2: [address.address_line2, address.landmark, address.district].filter(Boolean).join(", "),
+          pickup_city: String(address.city || ""),
+          pickup_state: String(address.state || ""),
+          pickup_country: "India",
+          pickup_pincode: String(address.pincode || ""),
+          pickup_email: buyer.email || "",
+          pickup_phone: String(address.phone || ""),
+          shipping_customer_name: "VPN Products and Services",
+          shipping_address: shopAddress,
+          shipping_city: shopCity,
+          shipping_state: shopState,
+          shipping_country: "India",
+          shipping_pincode: shopPostcode,
+          shipping_phone: shopPhone,
+          shipping_email: secret("SHIPROCKET_EMAIL"),
+          order_items: orderItems.map((item: any) => ({
+            name: item.product_title,
+            sku: String(item.product_key),
+            units: Number(item.quantity),
+            selling_price: Number(item.unit_price),
+            discount: 0,
+            tax: 0,
+            hsn: "",
+          })),
+          weight: Number(packageDetails.weight_kg),
+          length: Number(packageDetails.length_cm),
+          breadth: Number(packageDetails.breadth_cm),
+          height: Number(packageDetails.height_cm),
+          declared_value: Math.round(Number(order.subtotal)),
+          is_return: 1,
+        };
+        const created = await sr("/orders/create/return", "POST", returnPayload);
+        returnOrderId = Number(deepValue(created, ["order_id"]));
+        returnShipmentId = Number(deepValue(created, ["shipment_id"]));
+        if (!Number.isFinite(returnOrderId) || !Number.isFinite(returnShipmentId)) {
+          throw new Error("Shiprocket did not return the reverse-order and shipment IDs. Check the Shiprocket panel before retrying.");
+        }
+        // Persist these IDs immediately so an interrupted retry does not create duplicate reverse orders.
+        const { error: saveIdsError } = await adminDb.from("marketplace_return_requests").update({
+          shiprocket_return_order_id: returnOrderId,
+          shiprocket_return_shipment_id: returnShipmentId,
+          updated_at: new Date().toISOString(),
+        }).eq("id", returnRequestId).eq("status", "requested");
+        if (saveIdsError) throw new Error("Shiprocket created a return order, but its IDs could not be saved. Check the Shiprocket panel before retrying.");
+      }
+
+      let awb = String(returnRequest.return_awb || "");
+      if (!awb) {
+        const assigned = await sr("/courier/assign/awb", "POST", {
+          shipment_id: returnShipmentId,
+          courier_id: couriers[0].courier_id,
+        });
+        awb = String(deepValue(assigned, ["awb_code"]) || "");
+        if (!awb) throw new Error("The return order was created but Shiprocket did not return a reverse-pickup AWB.");
+        // Persist the AWB before scheduling pickup so retries do not assign a second courier/AWB.
+        const { error: saveAwbError } = await adminDb.from("marketplace_return_requests").update({
+          return_awb: awb,
+          return_tracking_url: "https://shiprocket.co/tracking/" + encodeURIComponent(awb),
+          updated_at: new Date().toISOString(),
+        }).eq("id", returnRequestId).eq("status", "requested");
+        if (saveAwbError) throw new Error("The reverse-pickup AWB was assigned, but could not be saved. Check Shiprocket before retrying.");
+      }
       await sr("/courier/generate/pickup", "POST", { shipment_id: [returnShipmentId] });
       const trackingUrl = "https://shiprocket.co/tracking/" + encodeURIComponent(awb);
       const { error: updateError } = await adminDb.from("marketplace_return_requests").update({
