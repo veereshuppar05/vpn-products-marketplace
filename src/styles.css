@@ -4366,3 +4366,36 @@ footer a:hover { color: var(--orange-dark); }
     padding: 4px 8px !important;
   }
 }
+
+
+/* Reduce only the four main page headings requested. */
+#home-hero h1 {
+  font-size: clamp(27px, 2.15vw, 34px) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.8px !important;
+}
+.category-section .section-title h2 {
+  font-size: clamp(22px, 1.85vw, 26px) !important;
+  line-height: 1.15 !important;
+  margin: 4px 0 0 !important;
+}
+.recent-products-section .section-title h2 {
+  font-size: clamp(21px, 1.8vw, 25px) !important;
+  line-height: 1.18 !important;
+}
+.all-products-page .category-page-heading h1 {
+  font-size: clamp(22px, 1.8vw, 25px) !important;
+  line-height: 1.18 !important;
+}
+@media (max-width: 850px) {
+  #home-hero h1 { font-size: clamp(27px, 5vw, 33px) !important; }
+  .category-section .section-title h2 { font-size: 23px !important; }
+  .recent-products-section .section-title h2 { font-size: 22px !important; }
+  .all-products-page .category-page-heading h1 { font-size: 23px !important; }
+}
+@media (max-width: 560px) {
+  #home-hero h1 { font-size: clamp(25px, 7vw, 30px) !important; }
+  .category-section .section-title h2 { font-size: 21px !important; }
+  .recent-products-section .section-title h2 { font-size: 20px !important; }
+  .all-products-page .category-page-heading h1 { font-size: 21px !important; }
+}
