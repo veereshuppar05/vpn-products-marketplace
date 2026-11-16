@@ -13,7 +13,7 @@ begin
   select
     p.id,
     coalesce(nullif(trim(p.full_name), ''), 'VPN Products and Services'),
-    coalesce(nullif(regexp_replace(trim(coalesce(p.phone, '')), '\\D', '', 'g'), ''), '9916140898')
+    coalesce(nullif(trim(p.phone), ''), '9916140898')
   into v_admin_id, v_seller_name, v_phone
   from public.profiles p
   where p.is_admin = true
