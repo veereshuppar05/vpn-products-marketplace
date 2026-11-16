@@ -1479,6 +1479,7 @@ export default function App() {
           <h1>Thank you for your order request!</h1>
           <p>Your order request is saved as pending confirmation. For demo listings, the seller must confirm the actual product, availability and price. Delivery charges and payment arrangements must also be confirmed before the sale is finalised.</p>
           {completedOrderId && <div className="commerce-order-reference">Order request ID <b>{completedOrderId}</b></div>}
+           {selectedShippingQuote && <div className="commerce-review-address"><b>Selected delivery service</b><strong>{selectedShippingQuote.courier_name}</strong><span>Estimated delivery fee: {money(selectedShippingQuote.rate)}</span><span>Estimated order total: {money(orderGrandTotal)}</span><small>Courier booking will happen after the shop confirms your order and payment.</small></div>}
           <p className="commerce-note">No online payment has been taken. For quickest follow-up, send this request reference to our team on WhatsApp.</p>
           <a className="btn primary commerce-whatsapp-followup" href={"https://wa.me/919916140898?text="+encodeURIComponent("Hello VPN Products and Services, please confirm my order request "+completedOrderId+".")} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp</a>
           <button className="btn light" type="button" onClick={closeCartPanel}>Continue shopping</button>
