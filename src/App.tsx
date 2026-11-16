@@ -1065,13 +1065,13 @@ export default function App() {
                 type="button"
                 className="btn product-cart-button"
                 onClick={event=>{event.stopPropagation();void addToCart(item);}}
-              >＋ Add to Cart</button>
+              ><span className="purchase-button-label">Add to Cart</span></button>
               <button
                 type="button"
                 className="btn primary buy-button"
                 disabled={isPreviewProduct(item)}
                 onClick={event=>{event.stopPropagation();void buyNow(item);}}
-              >Buy Now</button>
+              ><span className="purchase-button-label">Buy Now</span></button>
             </div>
             {item.contact_phone && <button type="button" className="contact-seller-link" onClick={event=>{event.stopPropagation();buyItem(item);}}>Contact seller on WhatsApp →</button>}
             {isPreviewProduct(item) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
@@ -1315,8 +1315,8 @@ export default function App() {
             <span className="detail-condition">{selectedProduct.condition}</span>
             <p className="detail-location">⌖ {selectedProduct.city}, {selectedProduct.state}</p>
             <div className="detail-buy-actions">
-              <button className="btn light detail-cart-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void addToCart(selectedProduct)}>＋ Add to Cart</button>
-              <button className="btn primary detail-buy-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void buyNow(selectedProduct)}>Buy Now</button>
+              <button className="btn light detail-cart-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void addToCart(selectedProduct)}><span className="purchase-button-label">Add to Cart</span></button>
+              <button className="btn primary detail-buy-button" type="button" disabled={isPreviewProduct(selectedProduct)} onClick={()=>void buyNow(selectedProduct)}><span className="purchase-button-label">Buy Now</span></button>
             </div>
             {selectedProduct.contact_phone && <button type="button" className="contact-seller-link" onClick={()=>buyItem(selectedProduct)}>Contact seller on WhatsApp →</button>}
             {isPreviewProduct(selectedProduct) && <span className="demo-tag">Demo product · preview only · not available to order</span>}
