@@ -10,6 +10,9 @@ alter table public.listings
   add column if not exists package_height_cm numeric(8,2),
   add column if not exists is_test_product boolean not null default false;
 
+alter table public.marketplace_order_items
+  add column if not exists is_test_product boolean not null default false;
+
 alter table public.marketplace_orders
   add column if not exists delivery_fee numeric(12,2) not null default 0,
   add column if not exists shipping_provider text not null default 'manual',
@@ -242,6 +245,7 @@ begin
     end;
     v_item_key := v_item->>'id';
     v_manual := true;
+    v_is_test_product := false;
     if v_item_key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
       v_listing_id := v_item_key::uuid;
       select l.title, l.category, l.condition, l.seller_name, l.price,
