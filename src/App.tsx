@@ -450,6 +450,7 @@ export default function App() {
 
   useEffect(() => {
     if (showServiceEnquiriesPage && user?.id && isAdmin) void loadServiceEnquiries();
+    if (!user?.id || !isAdmin) setServiceEnquiries([]);
   }, [showServiceEnquiriesPage,user?.id,isAdmin]);
 
   useEffect(() => {
@@ -1679,7 +1680,7 @@ export default function App() {
         </div>}
       </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
-      {showServiceEnquiriesPage ? <section className="service-enquiries-admin-page section">
+      {showServiceEnquiriesPage && user && isAdmin ? <section className="service-enquiries-admin-page section">
         <button type="button" className="cart-page-back" onClick={()=>window.history.state?.fromServiceEnquiries?window.history.back():(setShowServiceEnquiriesPage(false),window.history.replaceState({},"","/"))}>← Back</button>
         <div className="cart-page-heading"><span className="eyebrow">ADMINISTRATION</span><h1>Service Enquiries</h1><p>Review requests submitted for computer, mobile, printing, application and website services.</p></div>
         {serviceEnquiriesLoading ? <div className="cart-page-empty"><p>Loading enquiries…</p></div>
