@@ -16,6 +16,7 @@
   --line: #dce5f2;
   --surface: #ffffff;
   --page: #f7f9fd;
+  --page-heading-size: clamp(24px, 2.4vw, 28px);
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--page); color: var(--text); }
@@ -5076,8 +5077,8 @@ footer a:hover { color: var(--orange-dark); }
 }
 .service-enquiry-heading h1 {
   color: var(--navy, #0c1e39);
-  font-size: clamp(30px, 4vw, 42px);
-  line-height: 1.12;
+  font-size: var(--page-heading-size);
+  line-height: 1.2;
   margin: 9px 0 10px;
 }
 .service-enquiry-heading p {
