@@ -1659,7 +1659,7 @@ export default function App() {
           </button>
           {isAdmin && <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>void openAdminServiceEnquiries()}>
             <span aria-hidden="true">✉</span> Service Enquiries
-          </button>
+          </button>}
           <button type="button" className="profile-menu-item" role="menuitem" onClick={()=>openProfilePanel("view")}>
             <span aria-hidden="true">♙</span> My Profile
           </button>
