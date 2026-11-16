@@ -16,6 +16,7 @@ India-wide second-hand marketplace branded **VPN Products and Services**, using 
 - Checkout with saved address selection, order review and order-request confirmation
 - Shiprocket courier serviceability and delivery-rate quotes, with the selected courier and fee saved on the order
 - My Orders page with customer cancellation, delivered-order return requests and shipment status refresh
+- Admin email and WhatsApp alerts for new orders, customer cancellations and return requests
 - Admin order workflow to confirm orders, record verified prepaid payments, book Shiprocket shipments and process return requests
 - ₹1 checkout/cancellation test listing that never books a courier or triggers a physical shipment
 - Prepaid orders only; Cash on Delivery (COD) is not supported, and shipments are booked only after payment is verified
@@ -44,6 +45,7 @@ Run the SQL files below in the same Supabase SQL Editor, one at a time and in th
 5. `supabase/shipping-integration.sql` — package dimensions, courier quotes, shipping metadata and the current order function.
 6. `supabase/prepaid-only.sql` — database enforcement of prepaid-only payment.
 7. `supabase/order-lifecycle.sql` — My Orders cancellation, return-request and tracking fields.
+8. `supabase/order-notifications.sql` — private delivery log for email and WhatsApp order alerts.
 
 ### Prepare the shop admin account and ₹1 test listing
 
@@ -153,6 +155,51 @@ A buyer or administrator can request tracking with the same endpoint and their o
 My Orders includes a shop-admin view when the signed-in profile has `is_admin=true`. Admins can confirm orders, mark a prepaid payment as received only after verification, book a shipment and approve/reject return requests. The ₹1 test product is flagged in the database and is always blocked from Shiprocket shipment booking. It receives a zero-fee test-only quote so checkout and customer cancellation can be tested without Shiprocket credentials or a real pickup. Customers must use a separate account from the admin/seller account to buy the test listing.
 
 Delivery status is refreshed on demand from the customer's My Orders page using the Shiprocket AWB. It is not a push notification/webhook yet. A customer may cancel before courier dispatch; once the parcel is dispatched, the customer must use the delivered-order return flow instead. A prepaid refund is not issued automatically by this website and must be handled by the shop after reviewing the request. Reverse pickup approval requires the four additional `SHIPROCKET_PICKUP_*` secrets listed above.
+
+## Order notifications (email + WhatsApp)
+
+The website invokes the protected `order-notifications` Edge Function after a customer places an order, cancels an order, or submits a return request. Notifications go to the shop's configured email address and WhatsApp number. A notification-provider failure does not undo the order, cancellation, or return request. Delivery attempts are recorded in `marketplace_notification_events`; failed channels can be retried by invoking the same event again after fixing provider configuration.
+
+### 1. Email with Resend
+
+1. Create a Resend account and an API key at https://resend.com/api-keys.
+2. Verify the sending domain in Resend and add the DNS records it provides. Use a sender address on that verified domain.
+3. Add these Edge Function secrets in Supabase Dashboard > Edge Functions > Secrets:
+   - `RESEND_API_KEY` — Resend API key (keep private).
+   - `RESEND_FROM_EMAIL` — verified sender, for example `VPN Products Orders <orders@your-verified-domain>`.
+   - `ORDER_NOTIFICATION_EMAIL` — shop inbox, normally `veereshuppar05@gmail.com`.
+
+Resend's email API sends the message from the verified sender to the configured shop inbox. See https://resend.com/docs/api-reference/emails/send-email.
+
+### 2. WhatsApp with Meta WhatsApp Business Platform
+
+1. Set up a Meta developer app and add the WhatsApp product. Connect the business phone number that will send alerts.
+2. Obtain a WhatsApp Cloud API access token with `whatsapp_business_messaging` permission and copy the **Phone Number ID** (not the visible phone number).
+3. In WhatsApp Manager, create and get approval for a **Utility** message template with:
+   - Name: `vpn_order_alert`
+   - Language: `English` (language code `en`; use the exact code shown for the approved template)
+   - Body: `VPN Products alert: {{1}}. Order: {{2}}. Customer: {{3}}. Details: {{4}}. Please open the admin My Orders page to review.`
+   - Add example values for all four placeholders when submitting the template.
+4. Add these Edge Function secrets:
+   - `WHATSAPP_ACCESS_TOKEN` — private Cloud API access token.
+   - `WHATSAPP_PHONE_NUMBER_ID` — sending phone number ID from Meta.
+   - `ORDER_NOTIFICATION_WHATSAPP` — destination number for the shop owner, digits only with country code, e.g. `91XXXXXXXXXX`.
+   - `WHATSAPP_TEMPLATE_NAME` — `vpn_order_alert` (optional; this is the default).
+   - `WHATSAPP_TEMPLATE_LANGUAGE` — `en` (optional; must match the approved template language).
+   - `WHATSAPP_GRAPH_API_VERSION` — `v27.0` (optional; function default).
+
+The WhatsApp sender must be approved and the template status must be approved before notifications can be delivered. Meta's Cloud API sends template messages through the Graph API. See https://developers.facebook.com/docs/whatsapp/cloud-api/ and https://developers.facebook.com/docs/graph-api/reference/whats-app-business-hsm/.
+
+### 3. Deploy the notification function
+
+After running `supabase/order-notifications.sql`, deploy both functions from the repository root:
+
+```bash
+supabase functions deploy shiprocket --project-ref huvpbhmqeijhksjfkoqa
+supabase functions deploy order-notifications --project-ref huvpbhmqeijhksjfkoqa
+```
+
+Keep JWT verification enabled. Do not put Resend or Meta tokens in frontend environment variables, the website, or GitHub. Check Edge Functions > order-notifications > Logs if a channel reports a delivery failure. Email and WhatsApp delivery statuses are independent, so a failed channel can be retried without resending a channel that already succeeded.
 
 ## Deploy on Cloudflare Pages
 - Connect this GitHub repository.
