@@ -831,10 +831,6 @@ export default function App() {
   const persistCartItem = async (item:Listing,showMessage=true):Promise<boolean> => {
     if (!user) { requireLoginForCommerce(); return false; }
     if (!db) { setNotice("Cart is unavailable because the Supabase connection is not configured."); return false; }
-    if (isPreviewProduct(item)) {
-      setNotice("This is a demo preview product and cannot be ordered. Choose a live marketplace listing instead.");
-      return false;
-    }
     if (cartItems.some(current=>current.id===item.id)) {
       if (showMessage) setNotice("This product is already in your cart.");
       return true;
@@ -925,11 +921,20 @@ export default function App() {
   };
   const beginCartCheckout = () => {
     if (!cartItems.length) { setNotice("Your cart is empty. Add a product before checkout."); return; }
-    setCheckoutItemIds(cartItems.map(item=>item.id));
+    const orderableItems = cartItems.filter(item=>!isPreviewProduct(item));
+    const previewCount = cartItems.length - orderableItems.length;
+    if (!orderableItems.length) {
+      setNotice("Demo preview products can be saved in your cart, but they cannot be ordered. Add a live seller listing to continue.");
+      return;
+    }
+    setCheckoutItemIds(orderableItems.map(item=>item.id));
     setCheckoutStep("address");
     setAddressFormOpen(addresses.length===0);
     setSelectedAddressId(current=>addresses.some(address=>address.id===current)
       ? current : addresses.find(address=>address.is_default)?.id || addresses[0]?.id || "");
+    if (previewCount>0) {
+      setNotice(previewCount+" demo preview "+(previewCount===1?"item is":"items are")+" saved in your cart but excluded from this order request.");
+    }
   };
   const saveCustomerAddress = async (event:FormEvent) => {
     event.preventDefault();
@@ -1058,8 +1063,7 @@ export default function App() {
             <div className="product-buy-actions">
               <button
                 type="button"
-                className="btn light product-cart-button"
-                disabled={isPreviewProduct(item)}
+                className="btn product-cart-button"
                 onClick={event=>{event.stopPropagation();void addToCart(item);}}
               >＋ Add to Cart</button>
               <button
@@ -1093,7 +1097,7 @@ export default function App() {
   const displayName = user?.user_metadata?.full_name?.trim() || user?.email?.split("@")[0] || user?.phone || "User";
 
   return <div className="site">
-    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCartPage} aria-label={"Shopping cart with "+cartItems.length+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 1.9-1.4L22 8H6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg>{cartItems.length>0 && <span className="cart-count">{cartItems.length}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
+    <header className="header"><a className="logo" href="/" aria-label="VPN Products and Services home"><img src="/vpn-logo.webp" alt="VPN monogram logo" /><b>VPN Products and Services</b></a><div className="header-search"><span className="header-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, parts, gadgets and more"/></div><div className="header-actions"><button className="btn buy-top" onClick={openBuy}>🛒 Buy</button><button className="btn primary" onClick={openSell}>＋ Sell item</button>{user && <button type="button" className="cart-icon-button" onClick={openCartPage} aria-label={"Shopping cart with "+cartItems.length+" items"} title="Shopping cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 3.5h2.2l2.1 11.1c.15.8.83 1.4 1.65 1.4h9.2c.75 0 1.4-.48 1.62-1.2L21.5 7H6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 9.2h11.8l-1.15 4.5H8.85L8 9.2Z" fill="currentColor" opacity=".18"/><circle cx="9.7" cy="19.2" r="1.65" fill="currentColor"/><circle cx="18" cy="19.2" r="1.65" fill="currentColor"/></svg>{cartItems.length>0 && <span className="cart-count">{cartItems.length}</span>}</button>}{user ? <div className="profile-menu-wrap" ref={profileMenuRef}>
         <button type="button" className="profile-icon-button" aria-label={"Open profile menu for "+displayName} aria-haspopup="menu" aria-expanded={profileMenuOpen} onClick={()=>setProfileMenuOpen(value=>!value)}>
           {user.user_metadata?.avatar_url ? <img className="profile-avatar profile-avatar-image" src={user.user_metadata.avatar_url} alt="" /> : <span className="profile-avatar">{displayName.charAt(0).toUpperCase()}</span>}
         </button>
@@ -1150,6 +1154,7 @@ export default function App() {
                   <small>{item.city}, {item.state}</small>
                   <strong>{money(Number(item.price))}</strong>
                   <span className="cart-page-seller">Seller: {item.seller_name || "Marketplace seller"}</span>
+                  {isPreviewProduct(item) && <span className="cart-preview-label">Demo preview · saved in cart only</span>}
                 </div>
                 <button type="button" className="commerce-remove-button" onClick={()=>void removeCartItem(item.id)}>Remove</button>
               </article>)}
@@ -1160,8 +1165,9 @@ export default function App() {
               <div className="cart-summary-row"><span>Items ({cartItems.length})</span><b>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</b></div>
               <div className="cart-summary-row"><span>Delivery</span><b>To be confirmed</b></div>
               <div className="cart-summary-total"><span>Subtotal</span><strong>{money(cartItems.reduce((total,item)=>total+Number(item.price || 0),0))}</strong></div>
-              <p className="commerce-note">Delivery charges and final availability are confirmed by the seller before the order is accepted.</p>
-              <button className="btn primary full cart-page-checkout" type="button" onClick={beginCartCheckout}>Proceed to checkout →</button>
+              <p className="commerce-note">Delivery charges and final availability are confirmed by the seller. Demo preview products can be saved in your cart but are excluded from order requests.</p>
+              <button className="btn primary full cart-page-checkout" type="button" disabled={cartItems.every(isPreviewProduct)} onClick={beginCartCheckout}>Proceed to checkout →</button>
+              {cartItems.every(isPreviewProduct) && <small className="cart-preview-checkout-note">Add a live seller listing to continue to checkout.</small>}
               <div className="cart-page-secure-note"><span aria-hidden="true">✓</span> Your cart is saved to your account</div>
             </aside>
           </div>}
