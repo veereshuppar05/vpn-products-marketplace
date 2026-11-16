@@ -3645,3 +3645,72 @@ footer a:hover { color: var(--orange-dark); }
     font-size: 10px !important;
   }
 }
+
+
+/* Equal purchase buttons with centered, compact labels that fit narrow cards. */
+.product-buy-actions,
+.recent-products-grid .product-buy-actions,
+.all-products-page .product-buy-actions,
+.category-page .product-buy-actions,
+.detail-buy-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+.product-buy-actions > button,
+.recent-products-grid .product-buy-actions > button,
+.all-products-page .product-buy-actions > button,
+.category-page .product-buy-actions > button,
+.detail-buy-actions > button {
+  flex: 1 1 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  margin: 0 !important;
+  padding: 0 3px !important;
+  border-radius: 9px !important;
+  font-family: inherit !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+.purchase-button-label {
+  display: block;
+  flex: 0 1 auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: clip;
+  white-space: nowrap;
+  line-height: 1;
+}
+@media (max-width: 680px) {
+  .product-buy-actions,
+  .recent-products-grid .product-buy-actions,
+  .all-products-page .product-buy-actions,
+  .category-page .product-buy-actions,
+  .detail-buy-actions { gap: 6px !important; }
+  .product-buy-actions > button,
+  .recent-products-grid .product-buy-actions > button,
+  .all-products-page .product-buy-actions > button,
+  .category-page .product-buy-actions > button,
+  .detail-buy-actions > button {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    font-size: 9.5px !important;
+    padding: 0 2px !important;
+  }
+}
