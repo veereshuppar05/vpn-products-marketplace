@@ -136,10 +136,11 @@ const categoryFromPath = () => {
   try { slug = decodeURIComponent(match[1]); } catch { return null; }
   return [...new Set([...categories,...categoryTiles.map(tile=>tile.name)])].find(name=>categorySlug(name)===slug) ?? null;
 };
+const DEMO_LISTING_TIMESTAMP = "2020-01-01T00:00:00.000Z";
 const demo: Listing[] = [
-  {id:"demo-1",title:"iPhone 13 · 128GB",description:"Good condition, fully working. Sample listing for preview.",price:28500,category:"Mobiles & Tablets",condition:"Good",city:"Bengaluru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1632633173522-3cbf9e4a3b9b?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()},
-  {id:"demo-2",title:"Honda Activa 6G",description:"Single-owner scooter. Sample listing for preview.",price:62000,category:"Cars & Bikes",condition:"Good",city:"Mysuru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()},
-  {id:"demo-3",title:"Dell Inspiron Laptop",description:"Laptop for study and office use. Sample listing for preview.",price:22000,category:"Computers & Laptops",condition:"Fair",city:"Chennai",state:"Tamil Nadu",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:new Date().toISOString()}
+  {id:"demo-1",title:"iPhone 13 · 128GB",description:"Good condition, fully working. Sample listing for preview.",price:28500,category:"Mobiles & Tablets",condition:"Good",city:"Bengaluru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1632633173522-3cbf9e4a3b9b?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:DEMO_LISTING_TIMESTAMP},
+  {id:"demo-2",title:"Honda Activa 6G",description:"Single-owner scooter. Sample listing for preview.",price:62000,category:"Cars & Bikes",condition:"Good",city:"Mysuru",state:"Karnataka",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:DEMO_LISTING_TIMESTAMP},
+  {id:"demo-3",title:"Dell Inspiron Laptop",description:"Laptop for study and office use. Sample listing for preview.",price:22000,category:"Computers & Laptops",condition:"Fair",city:"Chennai",state:"Tamil Nadu",contact_phone:"",seller_name:"Demo seller",image_urls:["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80"],status:"active",created_at:DEMO_LISTING_TIMESTAMP}
 ];
 const featuredListings: Listing[] = [
   {
@@ -163,7 +164,7 @@ const featuredListings: Listing[] = [
       "/products/samsung-galaxy-a12/07-galaxy-a12-side-profile.webp"
     ],
     status:"active",
-    created_at:new Date().toISOString()
+    created_at:DEMO_LISTING_TIMESTAMP
   }
 ];
 const isAllProductsPath = () => /^\/products\/?$/.test(window.location.pathname);
@@ -175,7 +176,7 @@ const sampleListings: Listing[] = [
     price:18999,category:"Mobiles & Tablets",condition:"Good",city:"Bengaluru",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-1000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-lenovo-ideapad-3",
@@ -184,7 +185,7 @@ const sampleListings: Listing[] = [
     price:28999,category:"Computers & Laptops",condition:"Good",city:"Bengaluru",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-2000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-logitech-keyboard-mouse",
@@ -193,7 +194,7 @@ const sampleListings: Listing[] = [
     price:1299,category:"Computer Accessories",condition:"Like New",city:"Mysuru",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-3000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-jbl-bluetooth-speaker",
@@ -202,7 +203,7 @@ const sampleListings: Listing[] = [
     price:1799,category:"Electronics & Gadgets",condition:"Good",city:"Hubballi",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-4000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-car-led-headlight",
@@ -211,7 +212,7 @@ const sampleListings: Listing[] = [
     price:999,category:"Vehicle Parts",condition:"New",city:"Bengaluru",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-5000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-kitchen-mixer-grinder",
@@ -220,7 +221,7 @@ const sampleListings: Listing[] = [
     price:2499,category:"Home & Kitchen",condition:"Good",city:"Mandya",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-6000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-study-desk",
@@ -229,7 +230,7 @@ const sampleListings: Listing[] = [
     price:3499,category:"Furniture",condition:"Good",city:"Dharwad",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-7000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-canon-eos-camera",
@@ -238,7 +239,7 @@ const sampleListings: Listing[] = [
     price:21999,category:"Cameras",condition:"Good",city:"Mangaluru",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-8000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-travel-backpack",
@@ -247,7 +248,7 @@ const sampleListings: Listing[] = [
     price:899,category:"Fashion",condition:"Like New",city:"Shivamogga",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-9000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   },
   {
     id:"sample-cricket-kit",
@@ -256,7 +257,7 @@ const sampleListings: Listing[] = [
     price:1599,category:"Sports & Fitness",condition:"Good",city:"Tumakuru",state:"Karnataka",
     contact_phone:"",seller_name:"Demo seller",
     image_urls:["https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=900&q=85"],
-    status:"active",created_at:new Date(Date.now()-10000).toISOString()
+    status:"active",created_at:DEMO_LISTING_TIMESTAMP
   }
 ];
 const productIdFromPath = () => {
