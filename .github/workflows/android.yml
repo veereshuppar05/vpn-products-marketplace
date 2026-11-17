@@ -27,7 +27,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
@@ -55,10 +54,13 @@ jobs:
           npx cap sync android
 
       - name: Configure Firebase Android client
-        if: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON != '' }}
         env:
           ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
         run: |
+          if [ -z "$ANDROID_GOOGLE_SERVICES_JSON" ]; then
+            echo "Firebase client config is not set yet; push registration will be completed after Firebase setup."
+            exit 0
+          fi
           mkdir -p android/app
           printf '%s' "$ANDROID_GOOGLE_SERVICES_JSON" > android/app/google-services.json
           python3 - <<'PY'
@@ -119,14 +121,18 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Build signed Play Store bundle
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+      - name: Build signed Play Store bundle when upload key is configured
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon assembleRelease bundleRelease
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            ./gradlew --no-daemon assembleRelease bundleRelease
+          else
+            echo "Upload keystore secrets are not configured; skipping signed release APK/AAB."
+          fi
 
       - name: Upload APK and AAB artifacts
         uses: actions/upload-artifact@v4
