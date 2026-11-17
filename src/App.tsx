@@ -127,6 +127,8 @@ const featurePageFromPath = (): FeaturePageSlug | null => {
   const path = window.location.pathname.replace(/\/+$/,"").replace(/^\//,"");
   return (featurePageSlugs as readonly string[]).includes(path) ? path as FeaturePageSlug : null;
 };
+const isSellComingSoonPath = () => window.location.pathname.replace(/\\/+$/,"")==="/sell";
+
 
 const categorySlug = (name:string) => name.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 const categoryFromPath = () => {
@@ -419,6 +421,7 @@ export default function App() {
   const [showCartPage,setShowCartPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/cart");
   const [showOrdersPage,setShowOrdersPage] = useState(false);
   const [selectedFeaturePage,setSelectedFeaturePage] = useState<FeaturePageSlug|null>(()=>featurePageFromPath());
+  const [showSellComingSoon,setShowSellComingSoon] = useState(()=>isSellComingSoonPath());
   const [showServiceEnquiryPage,setShowServiceEnquiryPage] = useState(() => window.location.pathname.replace(/\/+$/,"")==="/enquire");
   const [enquiryService,setEnquiryService] = useState<string>(()=>serviceEnquirySlugFromLocation() || serviceEnquiryOptions[0].slug);
   const [enquiryForm,setEnquiryForm] = useState({fullName:"",phone:"",email:"",details:"",preferredContact:"whatsapp" as "whatsapp"|"phone"|"email"});
@@ -684,6 +687,7 @@ export default function App() {
       const categoryPage = categoryFromPath();
       const currentPath = window.location.pathname.replace(/\/+$/,"");
       const cartPage = currentPath==="/cart";
+      setShowSellComingSoon(isSellComingSoonPath());
       setSelectedFeaturePage(featurePageFromPath());
       setShowServiceEnquiryPage(currentPath==="/enquire");
       setEnquiryService(serviceEnquirySlugFromLocation() || serviceEnquiryOptions[0].slug);
@@ -1290,7 +1294,29 @@ export default function App() {
     document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});
   };
   const openSell = () => {
-    setNotice("Coming soon! Selling items is not available yet. We're working on this feature and will announce when it is ready.");
+    window.history.pushState({fromSellComingSoon:true},"","/sell");
+    setShowSellComingSoon(true);
+    setSelectedFeaturePage(null);
+    setShowServiceEnquiryPage(false);
+    setShowServiceEnquiriesPage(false);
+    setShowCartPage(false);
+    setShowOrdersPage(false);
+    setSelectedProductId(null);
+    setSelectedCategoryPage(null);
+    setShowAllCategoriesPage(false);
+    setShowAllProductsPage(false);
+    setProfileMenuOpen(false);
+    setSellOpen(false);
+    window.scrollTo({top:0,behavior:"auto"});
+  };
+  const backFromSellComingSoon = () => {
+    if (window.history.state?.fromSellComingSoon) {
+      window.history.back();
+    } else {
+      window.history.replaceState({},"","/");
+      setShowSellComingSoon(false);
+      window.scrollTo({top:0,behavior:"auto"});
+    }
   };
   const buyItem = (item:Listing) => {
     if (!user) {
@@ -1853,7 +1879,38 @@ export default function App() {
         </div>}
       </div> : <button className="btn account-top" onClick={()=>{setMode("login");setAuthOpen(true);}}><span className="account-top-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3" fill="none" stroke="currentColor" strokeWidth="1.8"/><path d="M5.2 20c.55-3.4 3.1-5.2 6.8-5.2s6.25 1.8 6.8 5.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg></span><span className="account-top-copy"><b>Login</b><small>Register</small></span></button>}</div></header>
     <main id="top">
-      {activeFeaturePage ? <section className="feature-detail-page section">
+      {showSellComingSoon ? <section className="sell-coming-soon-page section">
+        <button type="button" className="sell-coming-soon-back" onClick={backFromSellComingSoon}>← Back to home</button>
+        <div className="sell-coming-soon-hero">
+          <div className="sell-coming-soon-copy">
+            <span className="eyebrow">SELLING ON VPN PRODUCTS</span>
+            <h1>Something good is coming.</h1>
+            <p>We’re preparing the seller experience so you can list your products, manage enquiries and keep track of your sales in one place.</p>
+            <div className="sell-coming-soon-status"><span className="sell-coming-soon-status-dot"></span> Seller listings are not open yet</div>
+            <button type="button" className="btn primary" onClick={backFromSellComingSoon}>Continue browsing products</button>
+          </div>
+          <div className="sell-coming-soon-art" aria-hidden="true">
+            <div className="sell-coming-soon-orbit sell-coming-soon-orbit-one"></div>
+            <div className="sell-coming-soon-orbit sell-coming-soon-orbit-two"></div>
+            <div className="sell-coming-soon-art-card">
+              <svg viewBox="0 0 120 120" role="img" aria-hidden="true">
+                <rect x="18" y="31" width="84" height="69" rx="13" fill="#eaf2ff" stroke="#1769e0" strokeWidth="4"/>
+                <path d="M38 31V22a22 22 0 0 1 44 0v9" fill="none" stroke="#123c78" strokeWidth="6" strokeLinecap="round"/>
+                <path d="M37 53h46M37 67h34" stroke="#7eaff0" strokeWidth="6" strokeLinecap="round"/>
+                <circle cx="87" cy="19" r="16" fill="#f47721"/>
+                <path d="M79 19h16m-6-6 6 6-6 6" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="sell-coming-soon-spark sell-coming-soon-spark-one"></span>
+            <span className="sell-coming-soon-spark sell-coming-soon-spark-two"></span>
+          </div>
+        </div>
+        <div className="sell-coming-soon-info">
+          <article><span>01</span><b>Prepare your listing</b><p>Add product photos, descriptions, condition and price.</p></article>
+          <article><span>02</span><b>Manage buyer enquiries</b><p>Keep customer questions and product interest organised.</p></article>
+          <article><span>03</span><b>Track your sales</b><p>Manage orders and selling activity from your account.</p></article>
+        </div>
+      </section> : activeFeaturePage ? <section className="feature-detail-page section">
         <button type="button" className="feature-page-back" onClick={backFromFeaturePage}>← Back to home</button>
         <header className="feature-page-hero">
           <div className="feature-page-hero-copy">
