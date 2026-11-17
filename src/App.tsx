@@ -1290,13 +1290,7 @@ export default function App() {
     document.getElementById("listings")?.scrollIntoView({behavior:"smooth"});
   };
   const openSell = () => {
-    if (!user) {
-      setMode("login");
-      setNotice("Please login or register before selling an item.");
-      setAuthOpen(true);
-      return;
-    }
-    setSellOpen(true);
+    setNotice("Coming soon! Selling items is not available yet. We're working on this feature and will announce when it is ready.");
   };
   const buyItem = (item:Listing) => {
     if (!user) {
