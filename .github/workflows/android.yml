@@ -51,7 +51,15 @@ jobs:
         run: npm install
 
       - name: Build the website bundle
-        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://huvpbhmqeijhksjfkoqa.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Add VITE_SUPABASE_PUBLISHABLE_KEY in GitHub repository Settings > Secrets and variables > Actions before building the production Android app."
+            exit 1
+          fi
+          npm run build
 
       - name: Generate the native Android project
         run: |
@@ -63,29 +71,20 @@ jobs:
           ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
         run: |
           if [ -z "$ANDROID_GOOGLE_SERVICES_JSON" ]; then
-            echo "Firebase client config is not set yet; push registration will be completed after Firebase setup."
+            echo "Firebase client config is not set yet; push registration will not work until the Firebase setup is complete."
             exit 0
           fi
           mkdir -p android/app
           printf '%s' "$ANDROID_GOOGLE_SERVICES_JSON" > android/app/google-services.json
           python3 - <<'PY'
+          import json
           from pathlib import Path
-          root = Path("android/build.gradle")
-          app = Path("android/app/build.gradle")
-          if not root.exists() or not app.exists():
-              raise SystemExit("Capacitor Android Gradle files were not generated.")
-          root_text = root.read_text()
-          if "com.google.gms:google-services" not in root_text:
-              marker = "dependencies {"
-              if marker not in root_text:
-                  raise SystemExit("Could not locate Android root Gradle dependencies block.")
-              root_text = root_text.replace(marker, marker + "\n        classpath 'com.google.gms:google-services:4.4.4'", 1)
-              root.write_text(root_text)
-          app_text = app.read_text()
-          if "com.google.gms.google-services" not in app_text:
-              app_text = app_text.rstrip() + "\n\napply plugin: 'com.google.gms.google-services'\n"
-              app.write_text(app_text)
-          print("Firebase Google Services configuration added.")
+          config = json.loads(Path("android/app/google-services.json").read_text())
+          package_names = [client.get("client_info", {}).get("android_client_info", {}).get("package_name")
+                           for client in config.get("client", [])]
+          if "com.vpnproducts.services" not in package_names:
+              raise SystemExit("google-services.json must include Android package com.vpnproducts.services.")
+          print("Firebase Android configuration validated.")
           PY
 
       - name: Configure optional Play Store upload signing
