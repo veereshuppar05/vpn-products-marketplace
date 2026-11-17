@@ -137,14 +137,14 @@ function base64Url(value: string | Uint8Array) {
   const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/=/g, "").replace(/\\+/g, "-").replace(/\\//g, "_");
+return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 function decodePrivateKey(pem: string) {
   const base64 = pem
     .replace(/-----BEGIN PRIVATE KEY-----/g, "")
     .replace(/-----END PRIVATE KEY-----/g, "")
-    .replace(/\\s/g, "");
+    .replace(/\s/g, "");
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
@@ -167,7 +167,7 @@ async function getFirebaseAccessToken(serviceAccount: any) {
       iat: now,
       exp: now + 3600,
     }));
-  const privateKey = String(serviceAccount.private_key || "").replace(/\\n/g, "\\n").replace(/\\n/g, "\\n");
+  const privateKey = String(serviceAccount.private_key || "").replace(/\\n/g, "\n");
   const key = await crypto.subtle.importKey(
     "pkcs8",
     decodePrivateKey(privateKey),
@@ -279,7 +279,7 @@ Deno.serve(async (request: Request) => {
 
     const { data: order, error: orderError } = await adminDb
       .from("marketplace_orders")
-      .select("id,buyer_id,status,subtotal,delivery_fee,is_test_order,cancelled_by,created_at")
+      .select("id,buyer_id,status,subtotal,delivery_fee,is_test_order,cancelled_by,created_at,payment_status,shiprocket_order_id")
       .eq("id", orderId)
       .maybeSingle();
     if (orderError || !order) return respond({ error: "Order was not found." }, 404);
@@ -292,6 +292,15 @@ Deno.serve(async (request: Request) => {
     }
     if (eventType === "order_update" && !["confirmed", "payment_received", "order_shipped", "processing"].includes(updateStatus)) {
       return respond({ error: "Unsupported order update notification." }, 400);
+    }
+    if (eventType === "order_update" && updateStatus === "confirmed" && order.status !== "confirmed") {
+      return respond({ error: "The order is not confirmed yet." }, 409);
+    }
+    if (eventType === "order_update" && updateStatus === "payment_received" && order.payment_status !== "paid") {
+      return respond({ error: "The prepaid payment has not been marked as received." }, 409);
+    }
+    if (eventType === "order_update" && updateStatus === "order_shipped" && !order.shiprocket_order_id) {
+      return respond({ error: "The courier shipment has not been booked yet." }, 409);
     }
     if (eventType === "order_cancelled" && order.status !== "cancelled") {
       return respond({ error: "This order has not been cancelled." }, 409);
@@ -383,7 +392,7 @@ Deno.serve(async (request: Request) => {
       const { data, error } = await adminDb.from("marketplace_notification_events")
         .update({ [column]: "sending", updated_at: new Date().toISOString() })
         .eq("id", eventRow.id)
-        .in(column, ["pending", "failed"])
+        .in(column, ["pending", "failed", "skipped"])
         .select("id")
         .maybeSingle();
       if (error) throw new Error("Could not claim notification delivery: " + error.message);
