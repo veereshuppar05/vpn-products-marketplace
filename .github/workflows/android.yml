@@ -132,7 +132,7 @@ jobs:
                   raise SystemExit("Could not find the release build type in android/app/build.gradle.")
               build_types = build_types.replace(
                   release_marker,
-                  release_marker + "\\n            signingConfig signingConfigs.release",
+                  release_marker + "\n            signingConfig signingConfigs.release",
                   1,
               )
 
