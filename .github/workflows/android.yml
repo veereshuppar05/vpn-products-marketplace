@@ -71,8 +71,8 @@ jobs:
           ANDROID_GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
         run: |
           if [ -z "$ANDROID_GOOGLE_SERVICES_JSON" ]; then
-            echo "Firebase client config is not set yet; push registration will not work until the Firebase setup is complete."
-            exit 0
+            echo "::error::Add ANDROID_GOOGLE_SERVICES_JSON in GitHub repository Settings > Secrets and variables > Actions. The file must come from Firebase Android app com.vpnproducts.services."
+            exit 1
           fi
           mkdir -p android/app
           printf '%s' "$ANDROID_GOOGLE_SERVICES_JSON" > android/app/google-services.json
