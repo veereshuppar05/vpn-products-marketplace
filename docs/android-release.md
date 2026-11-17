@@ -55,7 +55,21 @@ Do not commit `google-services.json`, Firebase service-account JSON, FCM private
 
 ## Google Play release signing
 
-A Play Store release needs a signed Android App Bundle (.aab). Create an upload keystore and store these GitHub repository secrets:
+A Play Store release needs a signed Android App Bundle (.aab). On Windows, open PowerShell in a private folder and create an upload keystore with:
+
+```powershell
+keytool -genkeypair -v -keystore vpn-products-upload.jks -alias vpn-products-upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Keep the file and its passwords in a secure offline backup. Convert the keystore to Base64 for GitHub without uploading the original file:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\\vpn-products-upload.jks")) | Set-Clipboard
+```
+
+Paste the clipboard value into GitHub secret `ANDROID_KEYSTORE_BASE64`. Add the exact passwords and alias you entered when creating the key.
+
+Store these GitHub repository secrets:
 
 - `ANDROID_KEYSTORE_BASE64`: base64-encoded upload keystore file.
 - `ANDROID_KEYSTORE_PASSWORD`
