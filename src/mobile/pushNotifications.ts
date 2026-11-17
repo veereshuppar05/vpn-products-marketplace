@@ -2,7 +2,6 @@ import { Capacitor } from "@capacitor/core";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   PushNotifications,
-  type PluginListenerHandle,
   type PushNotificationSchema
 } from "@capacitor/push-notifications";
 
@@ -18,7 +17,7 @@ export async function registerAndroidPushNotifications(
 
   let disposed = false;
   let registeredToken = "";
-  const listeners: PluginListenerHandle[] = [];
+  const listeners: Array<{ remove: () => Promise<void> }> = [];
 
   const removeListeners = async () => {
     await Promise.all(listeners.map(async (listener) => {
