@@ -1,4 +1,5 @@
 name: Deploy order notifications Edge Function
+# Deployment retry after SUPABASE_ACCESS_TOKEN was configured.
 
 on:
   workflow_dispatch:
