@@ -75,3 +75,25 @@ grant execute on function public.register_customer_push_token(text,text) to auth
 grant execute on function public.unregister_customer_push_token(text) to authenticated;
 
 notify pgrst, 'reload schema';
+
+
+-- Extend the existing admin/customer notification event log for Firebase push.
+alter table public.marketplace_notification_events
+  add column if not exists push_status text not null default 'pending',
+  add column if not exists push_error text;
+
+alter table public.marketplace_notification_events
+  drop constraint if exists marketplace_notification_events_event_type_check;
+
+alter table public.marketplace_notification_events
+  add constraint marketplace_notification_events_event_type_check
+  check (event_type in ('order_placed','order_cancelled','return_requested','order_update'));
+
+alter table public.marketplace_notification_events
+  drop constraint if exists marketplace_notification_events_push_status_check;
+
+alter table public.marketplace_notification_events
+  add constraint marketplace_notification_events_push_status_check
+  check (push_status in ('pending','sending','sent','failed','skipped'));
+
+notify pgrst, 'reload schema';
