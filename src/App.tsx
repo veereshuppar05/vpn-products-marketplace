@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import indiaStatesDistricts from "./data/india_states_districts.json";
+import { registerAndroidPushNotifications } from "./mobile/pushNotifications";
 
 type Listing = {
   id: string; title: string; description: string; price: number; category: string;
@@ -571,6 +572,22 @@ export default function App() {
       setOrders([]);
       setShowOrdersPage(false);
     }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!db || !user?.id) return;
+    let disposed = false;
+    let cleanup: (() => Promise<void>) | null = null;
+    void registerAndroidPushNotifications(db, user.id).then((stop) => {
+      if (disposed) void stop();
+      else cleanup = stop;
+    }).catch((error) => {
+      console.warn("Android push notifications could not be initialised:", error);
+    });
+    return () => {
+      disposed = true;
+      if (cleanup) void cleanup();
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -1420,14 +1437,21 @@ export default function App() {
     void loadCommerceData(user);
     window.scrollTo({top:0,behavior:"smooth"});
   };
+  useEffect(() => {
+    const openOrdersFromPush = () => openMyOrders();
+    window.addEventListener("vpn:open-orders", openOrdersFromPush);
+    return () => window.removeEventListener("vpn:open-orders", openOrdersFromPush);
+  }, [user?.id]);
+
   const notifyOrderEvent = async (
-    eventType:"order_placed"|"order_cancelled"|"return_requested",
+    eventType:"order_placed"|"order_cancelled"|"return_requested"|"order_update",
     orderId:string,
-    returnRequestId?:string
+    returnRequestId?:string,
+    updateStatus?:string
   ) => {
     if (!db || !user || !orderId) return;
     const {data,error} = await db.functions.invoke("order-notifications",{
-      body:{eventType,orderId,...(returnRequestId ? {returnRequestId} : {})}
+      body:{eventType,orderId,...(returnRequestId ? {returnRequestId} : {}),...(updateStatus ? {updateStatus} : {})}
     });
     if (error || data?.error) {
       console.warn("Order notification could not be delivered:", data?.error || error?.message);
@@ -1504,7 +1528,7 @@ export default function App() {
         summaries.push(eventType+": failed");
       } else {
         const channels = data?.notifications || {};
-        summaries.push(eventType+": email "+String(channels.email||"unknown")+", WhatsApp "+String(channels.whatsapp||"unknown"));
+        summaries.push(eventType+": email "+String(channels.email||"unknown")+", WhatsApp "+String(channels.whatsapp||"unknown")+", push "+String(channels.push||"unknown"));
       }
     }
     setOrderBusyId("");
@@ -1518,6 +1542,7 @@ export default function App() {
     setOrderBusyId("");
     if (error || data?.error) { setNotice(data?.error || error?.message || "Could not update this order."); return; }
     setNotice("Order updated.");
+    void notifyOrderEvent("order_update",orderId,undefined,paymentStatus==="paid"?"payment_received":(status || ""));
     await loadCommerceData(user);
   };
   const adminBookShipment = async (orderId:string) => {
@@ -1528,6 +1553,7 @@ export default function App() {
     setOrderBusyId("");
     if (error || data?.error) { setNotice(data?.error || error?.message || "Shipment booking failed."); return; }
     setNotice("Shipment booked. AWB: "+(data.awb || "assigned"));
+    void notifyOrderEvent("order_update",orderId,undefined,"order_shipped");
     await loadCommerceData(user);
   };
   const adminProcessReturn = async (returnRequestId:string,action:"approve-return"|"reject-return") => {
