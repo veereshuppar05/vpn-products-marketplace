@@ -46,6 +46,7 @@ Run the SQL files below in the same Supabase SQL Editor, one at a time and in th
 6. `supabase/prepaid-only.sql` — database enforcement of prepaid-only payment.
 7. `supabase/order-lifecycle.sql` — My Orders cancellation, return-request and tracking fields.
 8. `supabase/order-notifications.sql` — private delivery log for email and WhatsApp order alerts.
+9. `supabase/mobile-push-notifications.sql` — authenticated Android push-token registration and Firebase push delivery status.
 
 ### Prepare the shop admin account and ₹1 test listing
 
