@@ -32,6 +32,14 @@ npm run android:sync
 
 GitHub Actions > Build Android app > Run workflow creates a debug-signed APK. Download the `vpn-products-android` artifact and install `app-debug.apk` on an Android device. This APK is for direct testing/installation, not the Play Store release.
 
+## Supabase app configuration
+
+Before running the Android workflow, add the GitHub Actions repository secret:
+
+- `VITE_SUPABASE_PUBLISHABLE_KEY`: the same publishable (or legacy anon) key that the live website uses.
+
+The workflow already sets the current Supabase project URL. Without this secret the Android workflow stops before packaging, to prevent generating an app that silently runs in demo mode instead of the real marketplace.
+
 ## Firebase push notifications
 
 1. Open Firebase Console and create a project for VPN Products.
