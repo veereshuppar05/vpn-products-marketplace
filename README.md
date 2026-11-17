@@ -223,3 +223,23 @@ The delivery-address state/district dropdown uses the [CodingMation India States
 ## Service enquiry form
 
 The five service cards link to a dedicated `/enquire?service=<service-slug>` form. Visitors may submit without signing in. The `supabase/service-enquiries.sql` migration creates the submissions table; public visitors can insert enquiries, while only shop administrators can read and update them. Administrators open the profile menu and choose **Service Enquiries** to review submissions, contact customers by phone/WhatsApp/email, and mark each enquiry as new, contacted or closed.
+
+
+## Android app (Capacitor)
+
+The Android app wraps this existing React/Vite application and continues to use the same Supabase Auth, database, products, cart, orders and service enquiries.
+
+See [docs/android-release.md](docs/android-release.md) for the full Android build, Firebase push notification, APK and Play Store signing instructions.
+
+Before running the Android workflow, add the following GitHub Actions repository secret:
+
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — the same Supabase publishable (or legacy anon) key used by the live website. The project URL is already configured in the workflow. This is a browser-safe publishable key, never a service-role secret.
+
+For Firebase push notifications:
+1. Create a Firebase project and register an Android app with package ID `com.vpnproducts.services`.
+2. Add the contents of Firebase's `google-services.json` as GitHub Actions repository secret `ANDROID_GOOGLE_SERVICES_JSON`.
+3. Run `supabase/mobile-push-notifications.sql` after the existing order notification migration.
+4. Add the Firebase service-account JSON to Supabase Edge Function secret `FIREBASE_SERVICE_ACCOUNT_JSON`.
+5. Redeploy the `order-notifications` Edge Function.
+
+For Play Store builds, additionally configure the four Android upload-keystore GitHub Actions secrets listed in `docs/android-release.md`. The Android workflow always builds a debug APK; it builds a release APK and AAB only after a valid upload keystore is configured.
