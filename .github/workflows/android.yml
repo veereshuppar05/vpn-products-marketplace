@@ -101,11 +101,20 @@ jobs:
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-key.jks
             python3 - <<'PY'
           from pathlib import Path
+
           app = Path("android/app/build.gradle")
           text = app.read_text()
-          if "signingConfigs {" not in text:
-              signing = """
-              signingConfigs {
+
+          build_types_marker = "    buildTypes {"
+          if build_types_marker not in text:
+              raise SystemExit("Could not find the Android buildTypes block in android/app/build.gradle.")
+
+          build_types_start = text.index(build_types_marker)
+          prefix = text[:build_types_start]
+          build_types = text[build_types_start:]
+
+          if "signingConfigs {" not in prefix:
+              signing = """    signingConfigs {
                   release {
                       storeFile file("upload-key.jks")
                       storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
@@ -113,11 +122,22 @@ jobs:
                       keyPassword System.getenv("ANDROID_KEY_PASSWORD")
                   }
               }
+
           """
-              text = text.replace("    buildTypes {", signing + "\n    buildTypes {", 1)
-          if "signingConfig signingConfigs.release" not in text:
-              text = text.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
-          app.write_text(text)
+              prefix += signing
+
+          if "signingConfig signingConfigs.release" not in build_types:
+              release_marker = "        release {"
+              if release_marker not in build_types:
+                  raise SystemExit("Could not find the release build type in android/app/build.gradle.")
+              build_types = build_types.replace(
+                  release_marker,
+                  release_marker + "\\n            signingConfig signingConfigs.release",
+                  1,
+              )
+
+          app.write_text(prefix + build_types)
+          print("Release signing configured in the buildTypes.release block.")
           PY
             echo "Release signing configured."
           else
