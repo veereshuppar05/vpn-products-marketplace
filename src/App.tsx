@@ -127,7 +127,7 @@ const featurePageFromPath = (): FeaturePageSlug | null => {
   const path = window.location.pathname.replace(/\/+$/,"").replace(/^\//,"");
   return (featurePageSlugs as readonly string[]).includes(path) ? path as FeaturePageSlug : null;
 };
-const isSellComingSoonPath = () => window.location.pathname.replace(/\\/+$/,"")==="/sell";
+const isSellComingSoonPath = () => window.location.pathname.replace(/\/+$/,"")==="/sell";
 
 
 const categorySlug = (name:string) => name.toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
