@@ -6,7 +6,7 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type EventType = "order_placed" | "order_cancelled" | "return_requested";
+type EventType = "order_placed" | "order_cancelled" | "return_requested" | "order_update";
 
 function respond(value: unknown, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -133,6 +133,109 @@ async function sendWhatsApp(input: { eventLabel: string; orderRef: string; custo
   return payload;
 }
 
+function base64Url(value: string | Uint8Array) {
+  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/=/g, "").replace(/\\+/g, "-").replace(/\\//g, "_");
+}
+
+function decodePrivateKey(pem: string) {
+  const base64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+    .replace(/-----END PRIVATE KEY-----/g, "")
+    .replace(/\\s/g, "");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  return bytes.buffer;
+}
+
+let cachedFirebaseAccessToken = "";
+let firebaseAccessTokenExpiresAt = 0;
+
+async function getFirebaseAccessToken(serviceAccount: any) {
+  if (cachedFirebaseAccessToken && Date.now() < firebaseAccessTokenExpiresAt - 60_000) {
+    return cachedFirebaseAccessToken;
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const unsigned = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" })) + "." +
+    base64Url(JSON.stringify({
+      iss: serviceAccount.client_email,
+      scope: "https://www.googleapis.com/auth/firebase.messaging",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    }));
+  const privateKey = String(serviceAccount.private_key || "").replace(/\\n/g, "\\n").replace(/\\n/g, "\\n");
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    decodePrivateKey(privateKey),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(unsigned));
+  const assertion = unsigned + "." + base64Url(new Uint8Array(signature));
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.access_token) {
+    throw new Error(String(payload.error_description || payload.error || "Could not authenticate with Firebase Cloud Messaging."));
+  }
+  cachedFirebaseAccessToken = String(payload.access_token);
+  firebaseAccessTokenExpiresAt = Date.now() + Number(payload.expires_in || 3600) * 1000;
+  return cachedFirebaseAccessToken;
+}
+
+async function sendFirebasePush(input: {
+  projectId: string;
+  accessToken: string;
+  deviceToken: string;
+  title: string;
+  body: string;
+  orderId: string;
+  eventType: string;
+}) {
+  const response = await fetch(
+    "https://fcm.googleapis.com/v1/projects/" + encodeURIComponent(input.projectId) + "/messages:send",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + input.accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: {
+          token: input.deviceToken,
+          notification: { title: input.title.slice(0, 120), body: input.body.slice(0, 240) },
+          data: {
+            screen: "orders",
+            orderId: input.orderId,
+            eventType: input.eventType,
+          },
+          android: {
+            priority: "high",
+            notification: { channel_id: "orders", sound: "default" },
+          },
+        },
+      }),
+    },
+  );
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMessage = payload?.error?.message || "Firebase push request failed with HTTP " + response.status;
+    throw new Error(String(errorMessage));
+  }
+  return payload;
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (request.method !== "POST") return respond({ error: "Method not allowed." }, 405);
@@ -164,8 +267,9 @@ Deno.serve(async (request: Request) => {
     const eventType = String(body.eventType || "") as EventType;
     const orderId = String(body.orderId || "");
     const returnRequestId = String(body.returnRequestId || "");
+    const updateStatus = String(body.updateStatus || "");
 
-    if (!["order_placed", "order_cancelled", "return_requested"].includes(eventType)) {
+    if (!["order_placed", "order_cancelled", "return_requested", "order_update"].includes(eventType)) {
       return respond({ error: "Unsupported notification event." }, 400);
     }
     if (!orderId) return respond({ error: "Order ID is required." }, 400);
@@ -180,8 +284,14 @@ Deno.serve(async (request: Request) => {
       .maybeSingle();
     if (orderError || !order) return respond({ error: "Order was not found." }, 404);
 
-    if (order.buyer_id !== user.id && !isAdmin) {
+    if (eventType === "order_update" && !isAdmin) {
+      return respond({ error: "Only the shop administrator can send an order status notification." }, 403);
+    }
+    if (eventType !== "order_update" && order.buyer_id !== user.id && !isAdmin) {
       return respond({ error: "You are not allowed to send notifications for this order." }, 403);
+    }
+    if (eventType === "order_update" && !["confirmed", "payment_received", "order_shipped", "processing"].includes(updateStatus)) {
+      return respond({ error: "Unsupported order update notification." }, 400);
     }
     if (eventType === "order_cancelled" && order.status !== "cancelled") {
       return respond({ error: "This order has not been cancelled." }, 409);
@@ -227,8 +337,19 @@ Deno.serve(async (request: Request) => {
       eventLabel = "Customer requested a return";
       detailText = (String(returnRequest.reason || "") + (returnRequest.details ? ": " + String(returnRequest.details) : "")).slice(0, 900);
     }
+    if (eventType === "order_update") {
+      const updateLabels: Record<string, string> = {
+        confirmed: "Your order has been confirmed",
+        payment_received: "Your prepaid payment has been verified",
+        order_shipped: "Your order has been booked for courier pickup",
+        processing: "Your order is being processed",
+      };
+      eventLabel = updateLabels[updateStatus];
+      detailText = "Order #" + orderRef + " — " + eventLabel;
+    }
 
-    const eventKey = eventType + ":" + (eventType === "return_requested" ? returnRequestId : orderId);
+    const eventKey = eventType + ":" + (eventType === "return_requested" ? returnRequestId : orderId) +
+      (eventType === "order_update" ? ":" + updateStatus : "");
     const { error: insertError } = await adminDb.from("marketplace_notification_events").insert({
       event_key: eventKey,
       event_type: eventType,
@@ -258,7 +379,7 @@ Deno.serve(async (request: Request) => {
 
     const result: Record<string, string> = {};
 
-    const claim = async (column: "email_status" | "whatsapp_status") => {
+    const claim = async (column: "email_status" | "whatsapp_status" | "push_status") => {
       const { data, error } = await adminDb.from("marketplace_notification_events")
         .update({ [column]: "sending", updated_at: new Date().toISOString() })
         .eq("id", eventRow.id)
@@ -269,7 +390,9 @@ Deno.serve(async (request: Request) => {
       return Boolean(data);
     };
 
-    if (eventRow.email_status === "sent") {
+    if (eventType === "order_update") {
+      result.email = "not_applicable";
+    } else if (eventRow.email_status === "sent") {
       result.email = "already_sent";
     } else if (await claim("email_status")) {
       try {
@@ -296,7 +419,9 @@ Deno.serve(async (request: Request) => {
       result.email = eventRow.email_status;
     }
 
-    if (eventRow.whatsapp_status === "sent") {
+    if (eventType === "order_update") {
+      result.whatsapp = "not_applicable";
+    } else if (eventRow.whatsapp_status === "sent") {
       result.whatsapp = "already_sent";
     } else if (await claim("whatsapp_status")) {
       try {
@@ -319,6 +444,108 @@ Deno.serve(async (request: Request) => {
       }
     } else {
       result.whatsapp = eventRow.whatsapp_status;
+    }
+
+
+    if (eventRow.push_status === "sent") {
+      result.push = "already_sent";
+    } else if (await claim("push_status")) {
+      try {
+        const firebaseJson = secret("FIREBASE_SERVICE_ACCOUNT_JSON");
+        if (!firebaseJson) {
+          throw new Error("Firebase push is not configured. Add FIREBASE_SERVICE_ACCOUNT_JSON to Supabase Edge Function secrets.");
+        }
+        let serviceAccount: any;
+        try {
+          serviceAccount = JSON.parse(firebaseJson);
+        } catch {
+          throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON must contain the complete Firebase service-account JSON.");
+        }
+        if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
+          throw new Error("The Firebase service-account JSON is missing project_id, client_email or private_key.");
+        }
+
+        let recipientIds: string[] = [];
+        if (eventType === "order_update") {
+          recipientIds = [String(order.buyer_id)];
+        } else {
+          const { data: adminProfiles, error: adminProfilesError } = await adminDb
+            .from("profiles").select("id").eq("is_admin", true);
+          if (adminProfilesError) throw new Error("Could not load administrator devices: " + adminProfilesError.message);
+          recipientIds = (adminProfiles || []).map((row: any) => String(row.id));
+        }
+
+        if (recipientIds.length === 0) {
+          await adminDb.from("marketplace_notification_events").update({
+            push_status: "skipped",
+            push_error: "No eligible notification recipient is configured.",
+            updated_at: new Date().toISOString(),
+          }).eq("id", eventRow.id);
+          result.push = "no_recipients";
+        } else {
+          const { data: devices, error: devicesError } = await adminDb
+            .from("customer_push_tokens")
+            .select("token,user_id")
+            .in("user_id", recipientIds)
+            .eq("platform", "android");
+          if (devicesError) throw new Error("Could not load registered Android devices. Run supabase/mobile-push-notifications.sql first. " + devicesError.message);
+
+          if (!devices?.length) {
+            await adminDb.from("marketplace_notification_events").update({
+              push_status: "skipped",
+              push_error: "No Android app has registered for push notifications for this recipient yet.",
+              updated_at: new Date().toISOString(),
+            }).eq("id", eventRow.id);
+            result.push = "no_registered_devices";
+          } else {
+            const accessToken = await getFirebaseAccessToken(serviceAccount);
+            const pushTitle = eventType === "order_update" ? "VPN Products — Order update" : eventLabel;
+            const pushBody = eventType === "order_update"
+              ? detailText
+              : ("Order #" + orderRef + " · " + summary).slice(0, 240);
+            const pushResults = await Promise.allSettled(devices.map((device: any) => sendFirebasePush({
+              projectId: String(serviceAccount.project_id),
+              accessToken,
+              deviceToken: String(device.token),
+              title: pushTitle,
+              body: pushBody,
+              orderId,
+              eventType,
+            })));
+            const failures = pushResults
+              .map((item, index) => item.status === "rejected"
+                ? "device " + (index + 1) + ": " + String((item as PromiseRejectedResult).reason?.message || (item as PromiseRejectedResult).reason)
+                : "")
+              .filter(Boolean);
+            if (failures.length > 0) {
+              const errorText = failures.join(" | ").slice(0, 1000);
+              await adminDb.from("marketplace_notification_events").update({
+                push_status: "failed",
+                push_error: errorText,
+                updated_at: new Date().toISOString(),
+              }).eq("id", eventRow.id);
+              result.push = "failed: " + errorText;
+            } else {
+              await adminDb.from("marketplace_notification_events").update({
+                push_status: "sent",
+                push_error: null,
+                updated_at: new Date().toISOString(),
+              }).eq("id", eventRow.id);
+              result.push = "sent to " + devices.length + " device(s)";
+            }
+          }
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Firebase push delivery failed.";
+        await adminDb.from("marketplace_notification_events").update({
+          push_status: "failed",
+          push_error: message.slice(0, 1000),
+          updated_at: new Date().toISOString(),
+        }).eq("id", eventRow.id);
+        result.push = "failed: " + message;
+      }
+    } else {
+      result.push = eventRow.push_status;
     }
 
     return respond({
