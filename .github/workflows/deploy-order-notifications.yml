@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_ID: huvpb...REPLACEME
+      SUPABASE_PROJECT_ID: huvpbhmqeijhksjfkoqa
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
