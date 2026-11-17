@@ -64,6 +64,9 @@ jobs:
       - name: Generate the native Android project
         run: |
           npx cap add android
+          mkdir -p assets
+          cp public/favicon.svg assets/logo.svg
+          npx capacitor-assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#071b43'
           npx cap sync android
 
       - name: Configure Firebase Android client
